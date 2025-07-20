@@ -1,22 +1,42 @@
-# Java-Project
+# Shohay – Centralized Donation Platform
 
-A 4th semester Java project developed as part of our academic coursework.
+A 4th semester Java-based project developed by Team lumineX for **CSE 4402: Visual Programming Lab-1A** at IUT.
 
 ## 📘 Project Overview
 
-This Java application was created to demonstrate core object-oriented programming concepts and practical Java skills. It serves as a hands-on learning project to build real-world software using Java's fundamental libraries.
+**Shohay** is a centralized donation platform designed to address the fragmentation and lack of transparency in current donation efforts. It streamlines the process of donating money, goods, and time, offering a unified, auditable system for donors, NGOs, and recipients. The platform aims to increase trust, improve coordination, and empower quicker response in times of need.
 
-## 👨‍💻 Authors
+## 🔍 Problem Statement
 
-- **Sohan Nur**
-- **Tasnif Emran Ekanto**
-- **Noshin Syara Promitee**
+Current donation systems face several issues:
+- Disconnected channels
+- Lack of transparency on fund usage
+- Poor volunteer and goods coordination
+- Limited public engagement
 
-## ⚙️ Technologies Used
+## 🎯 Objectives
 
-- Java SE 17
-- VS Code / IntelliJ IDEA
-- Git & GitHub
+- Centralize all forms of donation (money, goods, time)
+- Offer transparency with real-time tracking and reporting
+- Simplify the donation process for users and NGOs
+- Support emergency and disaster relief coordination
+
+## 🌟 Key Features
+
+- Transparent fund and goods tracking
+- Donor receipt generation for tax purposes
+- Recurring donation options
+- Volunteer application and tracking
+- NGO dashboard with auto-coordination tools
+- Disaster-response support
+- Real-time analytics and confirmation updates
+
+## 🛠️ Technologies Used
+
+- **Frontend:** React.js
+- **Backend:** Spring Boot
+- **Database:** SQL or MongoDB
+- **Version Control:** GitHub
 
 ## 🚀 How to Run
 
@@ -24,15 +44,17 @@ This Java application was created to demonstrate core object-oriented programmin
    ```bash
    git clone https://github.com/thesohannur/Java-Project.git
    ```
-2. Open the project in your favorite Java IDE.
-3. Compile and run the `Main.java` or the primary class.
+2. Set up backend with Spring Boot.
+3. Run the frontend using a React environment.
+4. Connect to SQL or MongoDB instance.
+5. Access the application via browser.
 
-## 📌 Features
+## 🧑‍🤝‍🧑 Meet the Team – Team lumineX
 
-- Modular Java classes
-- Console-based user interaction
-- Clean code structure with comments
+- **Sohan Nur** – 220041151
+- **Noshin Syara Promitee** – 220041120
+- **Tasnif Emran Ekanto** – 220041135
 
-## 📄 License
+## 🧾 License
 
-This project is for educational purposes only.
+This project is for academic use only.
