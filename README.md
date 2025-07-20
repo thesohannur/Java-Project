@@ -1,12 +1,4 @@
 # Java-Project
-4th semester java project.
-
-**Author -**
-
-Sohan Nur  <br>
-Tasnif Emran Ekanto <br> 
-Noshin Syara Promitee <br>
-# Java-Project
 
 A 4th semester Java project developed as part of our academic coursework.
 
