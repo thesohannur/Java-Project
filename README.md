@@ -1,6 +1,6 @@
 # Shohay – Centralized Donation Platform
 
-A 4th semester Java-based project developed by Team lumineX for **CSE 4402: Visual Programming Lab-1A** at IUT.
+A 4th semester Java-based project developed by Team lumineX for **CSE 4402: Visual Programming Lab** at IUT.
 
 ## 📘 Project Overview
 
@@ -51,9 +51,9 @@ Current donation systems face several issues:
 
 ## 🧑‍🤝‍🧑 Meet the Team – Team lumineX
 
-- **Sohan Nur** – 220041151
-- **Noshin Syara Promitee** – 220041120
-- **Tasnif Emran Ekanto** – 220041135
+- **Sohan Nur**
+- **Noshin Syara Promitee**
+- **Tasnif Emran Ekanto**
 
 ## 🧾 License
 
