@@ -1,9 +1,7 @@
 # Java-Project
 4th semester java project.
 
-<div style="color: blue; font-weight: bold;">
-    Author
-</div>
+<p><span style="color: blue; font-weight: bold;">Author -</span></p>
 
 <div>
     Sohan Nur<br>
