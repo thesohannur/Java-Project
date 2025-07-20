@@ -24,7 +24,6 @@ Current donation systems face several issues:
 ## 🌟 Key Features
 
 - Transparent fund and goods tracking
-- Donor receipt generation for tax purposes
 - Recurring donation options
 - Volunteer application and tracking
 - NGO dashboard with auto-coordination tools
