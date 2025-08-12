@@ -1,38 +1,134 @@
-.App {
-  text-align: center;
-}
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
+  /* Background image setup */
+  background-image: url('./Green-Design-and-Sustainable-Design.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+  /* Center container vertically and horizontally */
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  justify-content: center; /* horizontal centering */
+  align-items: center;     /* vertical centering */
+  height: 100vh;           /* full viewport height */
+}
+
+.container {
+  max-width: 400px;
+  padding: 20px;
+  background-color: #afffcdcc; /* slightly transparent so bg image shows through */
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+}
+
+/* rest of your styles */
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.inputField,
+.textareaField,
+select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.textareaField {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.buttonPrimary,
+.buttonSecondary {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease;
+}
+
+.buttonPrimary {
+  background-color: #4caf50;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.buttonPrimary:hover {
+  background-color: #45a045;
+}
+
+.buttonSecondary {
+  background-color: #f44336;
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.buttonSecondary:hover {
+  background-color: #da2e25;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.trackingContainer {
+  margin-top: 20px;
+  padding: 10px;
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  border-radius: 4px;
+}
+
+.eventCard,
+.requestCard {
+  border: 1px solid #ddd;
+  background-color: #fafafa;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 6px;
+}
+
+.progressBar {
+  background-color: #e0e0e0;
+  height: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: #4caf50;
+  transition: width 0.4s ease;
+}
+
+button:disabled,
+button[disabled] {
+  cursor: not-allowed;
+  background-color: #ccc !important;
+}
+
+/* ✅ New: Make download link look like button */
+a.buttonPrimary {
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  color: white;
+  background-color: #4caf50;
+  padding: 12px;
+  border-radius: 4px;
+  margin-top: 10px;
+  font-size: 1rem;
+}
+
+a.buttonPrimary:hover {
+  background-color: #ffffff;
 }
