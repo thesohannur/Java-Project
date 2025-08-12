@@ -34,7 +34,7 @@ Current donation systems face several issues:
 
 - **Frontend:** React.js
 - **Backend:** Spring Boot
-- **Database:** SQL or MongoDB
+- **Database:** MongoDB
 - **Version Control:** GitHub
 
 ## 🚀 How to Run
@@ -45,7 +45,7 @@ Current donation systems face several issues:
    ```
 2. Set up backend with Spring Boot.
 3. Run the frontend using a React environment.
-4. Connect to SQL or MongoDB instance.
+4. Connect to MongoDB instance.
 5. Access the application via browser.
 
 ## 🧑‍🤝‍🧑 Meet the Team – Team lumineX
