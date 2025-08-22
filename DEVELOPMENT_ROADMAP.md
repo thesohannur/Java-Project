@@ -715,3 +715,53 @@ java -jar target/shohay-backend-1.0.0.jar
 - ⏳ Monitoring systems
 - ⏳ Security hardening
 - ⏳ Launch preparation
+
+
+### API Endpoints Available:
+- POST /api/auth/login - Login for all user types
+```chatinput
+{
+  "email": "user@example.com",
+  "password": "userPassword123"
+}
+```
+
+- POST /api/auth/register/donor - Donor registration
+```chatinput
+{
+  "email": "donor@example.com",
+  "password": "donorPass123",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "phoneNumber": "+8801712345678",
+  "address": "123 Main St, Dhaka",
+  "occupation": "Software Engineer"
+}
+```
+- POST /api/auth/register/ngo - NGO registration
+```chatinput
+{
+  "email": "ngo@example.com",
+  "password": "ngoPass123",
+  "registrationNumber": "NGO-12345",
+  "organizationName": "Helping Hands Foundation",
+  "contactPerson": "Mr. Rahman",
+  "phoneNumber": "+8801812345678",
+  "address": "456 NGO Road, Chattogram",
+  "website": "https://helpinghands.org",
+  "description": "We help underprivileged communities with education and healthcare",
+  "focusAreas": ["Education", "Healthcare", "Poverty Alleviation"]
+}
+```
+- POST /api/auth/register/admin - Admin registration (requires secret key)
+```chatinput
+{
+  "email": "admin@example.com",
+  "password": "adminPassword123",
+  "fullName": "John Doe",
+  "adminKey": "SHOHAY_ADMIN_2024"
+}
+```
+- GET /api/donor/profile - Donor profile (requires DONOR role)
+- GET /api/ngo/profile - NGO profile (requires NGO role)
+- GET /api/admin/profile - Admin profile (requires ADMIN role)
