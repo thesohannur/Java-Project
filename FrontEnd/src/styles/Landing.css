@@ -1,0 +1,86 @@
+.landing-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #c1f5c1 0%, #87ceeb 100%);
+  padding: 2rem;
+}
+
+.landing-header {
+  text-align: center;
+  padding: 2rem;
+}
+
+.landing-header h1 {
+  font-size: 2.5rem;
+  color: #2c5530;
+  margin: 0;
+}
+
+.landing-header p {
+  font-size: 1.2rem;
+  color: #4a5568;
+}
+
+.hero-section {
+  text-align: center;
+  margin: 4rem 0;
+}
+
+.hero-content h2 {
+  font-size: 2rem;
+  color: #2d3748;
+  margin-bottom: 1rem;
+}
+
+.hero-content p {
+  font-size: 1.2rem;
+  color: #4a5568;
+  margin-bottom: 2rem;
+}
+
+.hero-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.btn-primary {
+  background: #4caf50;
+  color: white;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: #45a049;
+}
+
+.features-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  padding: 4rem 2rem;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.feature {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.feature h3 {
+  font-size: 1.5rem;
+  color: #2d3748;
+  margin-bottom: 1rem;
+}
+
+.feature p {
+  color: #4a5568;
+  line-height: 1.6;
+}
