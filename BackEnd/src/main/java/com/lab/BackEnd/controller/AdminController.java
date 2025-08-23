@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin")
-@CrossOrigin(origins = "*")
+// Remove @CrossOrigin - handled globally
 public class AdminController {
 
     @Autowired

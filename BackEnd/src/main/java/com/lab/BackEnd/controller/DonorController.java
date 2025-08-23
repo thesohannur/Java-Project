@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/donor")
-@CrossOrigin(origins = "*")
+// Remove @CrossOrigin - handled globally
 public class DonorController {
 
     @Autowired

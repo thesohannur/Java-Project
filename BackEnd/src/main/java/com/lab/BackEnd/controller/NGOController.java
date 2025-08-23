@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/ngo")
-@CrossOrigin(origins = "*")
+
 public class NGOController {
 
     @Autowired
