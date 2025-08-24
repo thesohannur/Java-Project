@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Document(collection = "donors")
 @Getter
@@ -29,7 +30,17 @@ public class Donor {
     private LocalDateTime registrationDate = LocalDateTime.now();
     private String userId;
     private Double amount;
+    private boolean approved = false;
+    private String donationId;
+    private LocalDateTime createdAt;
 
-    public Donor() {}
+    public Donor() {
+    }
+
+    public void initialize() {
+        this.donationId = UUID.randomUUID().toString();
+        this.createdAt = LocalDateTime.now();
+        this.approved = false; // default false
+    }
 
 }
