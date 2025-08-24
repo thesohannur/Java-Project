@@ -66,6 +66,4 @@ public class DonorController {
         return donorRepository.findByUserId(userId);
     }
 
-   
-
 }

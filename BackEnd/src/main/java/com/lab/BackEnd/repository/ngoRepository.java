@@ -15,6 +15,5 @@ public interface ngoRepository extends MongoRepository<NGO, String> {
     Optional<NGO> findByDonationId(String donationId); // ✅ removed static
     boolean existsByEmail(String email);
     boolean existsByRegistrationNumber(String registrationNumber);
-
-    List<NGO> findByApprovedFalse(); // ✅ for pending approvals
+    List<NGO> findByApprovedFalse();
 }
