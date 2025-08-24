@@ -28,6 +28,7 @@ public class Donor {
     private Double totalDonated = 0.0;
     private LocalDateTime registrationDate = LocalDateTime.now();
     private String userId;
+    private Double amount;
 
     public Donor() {}
 
