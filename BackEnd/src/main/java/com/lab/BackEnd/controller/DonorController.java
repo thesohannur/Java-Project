@@ -5,6 +5,7 @@ import com.lab.BackEnd.model.Donor;
 import com.lab.BackEnd.model.NGO;
 import com.lab.BackEnd.repository.DonorRepository;
 import com.lab.BackEnd.repository.ngoRepository;
+import com.lab.BackEnd.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +13,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -25,6 +24,8 @@ public class DonorController {
     private DonorRepository donorRepository;
     @Autowired
     private ngoRepository ngoRepository;
+    @Autowired
+    private PaymentService paymentService;
 
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<Donor>> getProfile() {
@@ -41,23 +42,30 @@ public class DonorController {
 
 
     @PostMapping("/donate")
-    public Donor donate(@RequestBody Donor donor) {
+    public ResponseEntity<String> donate(@RequestBody Donor donor) {
 
         if (donor.getAmount() == null || donor.getAmount() <= 50) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Minimum criteria not met");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Amount must be greater than 50/-");
         }
 
-        // Generate unique ID and timestamp
-        donor.initialize();
+        //Check payment
+        PaymentController paymentController = new PaymentController(paymentService);
+        boolean paymentSuccess = paymentController.processPayment(donor.getUserId(), donor.getAmount());
 
-        // Save in donor collection
+        if (!paymentSuccess) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body("Payment failed. Donation not processed.");
+        }
+
+        //Generate unique ID and timestamp
+        donor.initialize();
         donorRepository.save(donor);
 
-        // Save in NGO collection for manual approval
+        //Save in NGO collection for manual approval
         NGO ngoDonation = new NGO(donor);
         ngoRepository.save(ngoDonation);
 
-        return donor;
+        return ResponseEntity.ok("Payment successful. Donation sent for NGO approval.");
     }
 
     // Get donation history for a user
