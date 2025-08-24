@@ -11,6 +11,7 @@ const RegisterDonor = ({ onSwitchToLogin }) => {
     confirmPassword: '',
     phone: '',
     address: '',
+    occupation: '', // Add occupation field
     focusAreas: [],
     donationFrequency: '',
     preferredAmount: ''
@@ -52,6 +53,13 @@ const RegisterDonor = ({ onSwitchToLogin }) => {
       return;
     }
 
+    // Validate phone number format (Bangladesh format)
+    const phonePattern = /^(\+88)?01[3-9]\d{8}$/;
+    if (!phonePattern.test(formData.phone)) {
+      setMessage('Phone number must be in valid Bangladeshi format (01XXXXXXXXX or +8801XXXXXXXXX)');
+      return;
+    }
+
     setIsLoading(true);
     setMessage('');
 
@@ -60,12 +68,16 @@ const RegisterDonor = ({ onSwitchToLogin }) => {
       lastName: formData.lastName,
       email: formData.email,
       password: formData.password,
-      phone: formData.phone,
+      phoneNumber: formData.phone, // Backend expects 'phoneNumber'
       address: formData.address,
+      occupation: formData.occupation, // Backend expects this field
       focusAreas: formData.focusAreas,
       donationFrequency: formData.donationFrequency,
       preferredAmount: formData.preferredAmount
     };
+
+    // Debug: Log the data being sent
+    console.log('Donor data being sent:', donorData);
 
     const result = await registerDonor(donorData);
 
@@ -141,6 +153,15 @@ const RegisterDonor = ({ onSwitchToLogin }) => {
           name="address"
           placeholder="Address"
           value={formData.address}
+          onChange={handleChange}
+          required
+        />
+
+        <input
+          type="text"
+          name="occupation"
+          placeholder="Occupation"
+          value={formData.occupation}
           onChange={handleChange}
           required
         />

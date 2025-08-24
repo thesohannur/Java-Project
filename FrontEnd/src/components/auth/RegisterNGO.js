@@ -14,7 +14,6 @@ const RegisterNGO = ({ onSwitchToLogin }) => {
     website: '',
     description: '',
     focusAreas: [],
-    establishedYear: '',
     contactPersonName: '',
     contactPersonTitle: ''
   });
@@ -24,8 +23,7 @@ const RegisterNGO = ({ onSwitchToLogin }) => {
 
   const focusOptions = [
     'Education', 'Healthcare', 'Environment', 'Poverty Alleviation',
-    'Disaster Relief', 'Animal Welfare', 'Human Rights', 'Technology Access',
-    'Women Empowerment', 'Child Welfare', 'Elderly Care', 'Community Development'
+    'Disaster Relief', 'Animal Welfare', 'Human Rights', 'Technology Access'
   ];
 
   const handleChange = (e) => {
@@ -56,6 +54,13 @@ const RegisterNGO = ({ onSwitchToLogin }) => {
       return;
     }
 
+    // Validate phone number format (Bangladesh format)
+    const phonePattern = /^(\+88)?01[3-9]\d{8}$/;
+    if (!phonePattern.test(formData.phone)) {
+      setMessage('Phone number must be in valid Bangladeshi format (01XXXXXXXXX or +8801XXXXXXXXX)');
+      return;
+    }
+
     setIsLoading(true);
     setMessage('');
 
@@ -64,15 +69,16 @@ const RegisterNGO = ({ onSwitchToLogin }) => {
       registrationNumber: formData.registrationNumber,
       email: formData.email,
       password: formData.password,
-      phone: formData.phone,
+      phoneNumber: formData.phone, // Backend expects 'phoneNumber'
       address: formData.address,
       website: formData.website,
       description: formData.description,
       focusAreas: formData.focusAreas,
-      establishedYear: parseInt(formData.establishedYear),
-      contactPersonName: formData.contactPersonName,
-      contactPersonTitle: formData.contactPersonTitle
+      contactPerson: `${formData.contactPersonName} (${formData.contactPersonTitle})` // Combine name and title
     };
+
+    // Debug: Log the data being sent
+    console.log('NGO data being sent:', ngoData);
 
     const result = await registerNGO(ngoData);
 
@@ -141,16 +147,6 @@ const RegisterNGO = ({ onSwitchToLogin }) => {
             placeholder="Phone Number"
             value={formData.phone}
             onChange={handleChange}
-            required
-          />
-          <input
-            type="number"
-            name="establishedYear"
-            placeholder="Established Year"
-            value={formData.establishedYear}
-            onChange={handleChange}
-            min="1800"
-            max="2024"
             required
           />
         </div>
