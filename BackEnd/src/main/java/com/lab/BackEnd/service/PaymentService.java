@@ -1,7 +1,5 @@
 package com.lab.BackEnd.service;
-
 import org.springframework.stereotype.Service;
-
 import java.util.Random;
 
 @Service
@@ -15,6 +13,7 @@ public class PaymentService {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
 
         double chance = new Random().nextDouble();
         return chance < 0.9; // 90% success
