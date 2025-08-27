@@ -23,7 +23,8 @@ yarn-debug.log*
 yarn-error.log*
 
 
-# IntelliJ IDEA
+### IntelliJ IDEA ###
+.idea
+*.iws
 *.iml
-.idea/
-modules.xml
+*.ipr
