@@ -33,6 +33,7 @@ public class Donor {
     private boolean approved = false;
     private String donationId;
     private LocalDateTime createdAt;
+    private String ngoID;
 
     public Donor() {
     }

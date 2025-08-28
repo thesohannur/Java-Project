@@ -3,7 +3,9 @@ package com.lab.BackEnd.controller;
 import com.lab.BackEnd.dto.response.ApiResponse;
 import com.lab.BackEnd.model.Donor;
 import com.lab.BackEnd.model.NGO;
+import com.lab.BackEnd.model.Payment;
 import com.lab.BackEnd.repository.DonorRepository;
+import com.lab.BackEnd.repository.PaymentRepository;
 import com.lab.BackEnd.repository.ngoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,9 +26,9 @@ public class NGOController {
     @Autowired
     private ngoRepository ngoRepository;
     @Autowired
-    private DonorRepository donorRepository;
+    private PaymentRepository paymentRepository;
 
-    @GetMapping("/profile")
+    @GetMapping("/profile")  //@Sohan // Not tested // need to be tested by using JWT
     public ResponseEntity<ApiResponse<NGO>> getProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -39,50 +41,35 @@ public class NGOController {
         }
     }
 
-    //NGO approves donation manually
-    @PostMapping("/approve/{donationId}")
-    public NGO approveDonation(@PathVariable String donationId) {
-        NGO ngoDonation = ngoRepository.findByDonationId(donationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donation not found"));
+    @PutMapping("/profile")  //@Sohan // Not tested // need to be tested by using JWT
+    public ResponseEntity<ApiResponse<NGO>> updateProfile(@RequestBody NGO updatedNgo) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
 
-        ngoDonation.setApproved(true);
-        ngoRepository.save(ngoDonation);
+        NGO ngo = ngoRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "NGO not found"));
 
-        //Update donor as well
-        Donor donation = donorRepository.findByDonationId(donationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donation not found"));
-        donation.setApproved(true);
-        donorRepository.save(donation);
+        // Update allowed fields
+        ngo.setOrganizationName(updatedNgo.getOrganizationName());
+        ngo.setContactPerson(updatedNgo.getContactPerson());
+        ngo.setPhoneNumber(updatedNgo.getPhoneNumber());
+        ngo.setAddress(updatedNgo.getAddress());
+        ngo.setWebsite(updatedNgo.getWebsite());
+        ngo.setDescription(updatedNgo.getDescription());
+        ngo.setFocusAreas(updatedNgo.getFocusAreas());
+        ngo.setLogo(updatedNgo.getLogo());
 
-        return ngoDonation;
+        ngoRepository.save(ngo);
+
+        return ResponseEntity.ok(ApiResponse.success("NGO profile updated successfully", ngo));
     }
 
-    // Reject a donation
-    @PostMapping("/reject/{donationId}")
-    public ResponseEntity<String> rejectDonation(@PathVariable String donationId) {
 
-        // Find donation in NGO collection
-        NGO ngoDonation = ngoRepository.findByDonationId(donationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donation not found"));
-
-        // Mark as rejected
-        ngoDonation.setApproved(false);
-        ngoRepository.save(ngoDonation);
-
-        // Update donor
-        Donor donation = donorRepository.findByDonationId(donationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donation not found"));
-        donation.setApproved(false);
-        donorRepository.save(donation);
-
-        return ResponseEntity.ok("Donation rejected successfully.");
-    }
 
     // Pending donation getter
-    @GetMapping("/pending")
-    public List<NGO> getPendingDonations() {
-        return ngoRepository.findByApprovedFalse();
+    @GetMapping("/donation/{ngoId}")
+    public List<Payment> getPendingDonations(@PathVariable String ngoId) {
+        return paymentRepository.findByNgoId(ngoId);
     }
-
 
 }
