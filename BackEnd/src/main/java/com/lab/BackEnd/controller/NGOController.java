@@ -39,50 +39,13 @@ public class NGOController {
         }
     }
 
-    //NGO approves donation manually
-    @PostMapping("/approve/{donationId}")
-    public NGO approveDonation(@PathVariable String donationId) {
-        NGO ngoDonation = ngoRepository.findByDonationId(donationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donation not found"));
 
-        ngoDonation.setApproved(true);
-        ngoRepository.save(ngoDonation);
 
-        //Update donor as well
-        Donor donation = donorRepository.findByDonationId(donationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donation not found"));
-        donation.setApproved(true);
-        donorRepository.save(donation);
-
-        return ngoDonation;
-    }
-
-    // Reject a donation
-    @PostMapping("/reject/{donationId}")
-    public ResponseEntity<String> rejectDonation(@PathVariable String donationId) {
-
-        // Find donation in NGO collection
-        NGO ngoDonation = ngoRepository.findByDonationId(donationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donation not found"));
-
-        // Mark as rejected
-        ngoDonation.setApproved(false);
-        ngoRepository.save(ngoDonation);
-
-        // Update donor
-        Donor donation = donorRepository.findByDonationId(donationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donation not found"));
-        donation.setApproved(false);
-        donorRepository.save(donation);
-
-        return ResponseEntity.ok("Donation rejected successfully.");
-    }
-
-    // Pending donation getter
+    /*// Pending donation getter
     @GetMapping("/pending")
     public List<NGO> getPendingDonations() {
         return ngoRepository.findByApprovedFalse();
-    }
+    }*/
 
 
 }

@@ -3,7 +3,9 @@ package com.lab.BackEnd.controller;
 import com.lab.BackEnd.dto.response.ApiResponse;
 import com.lab.BackEnd.model.Donor;
 import com.lab.BackEnd.model.NGO;
+import com.lab.BackEnd.model.Payment;
 import com.lab.BackEnd.repository.DonorRepository;
+import com.lab.BackEnd.repository.PaymentRepository;
 import com.lab.BackEnd.repository.ngoRepository;
 import com.lab.BackEnd.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
 import java.util.Optional;
 
 @RestController
@@ -23,16 +26,16 @@ public class DonorController {
     @Autowired
     private DonorRepository donorRepository;
     @Autowired
-    private ngoRepository ngoRepository;
-    @Autowired
     private PaymentService paymentService;
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<Donor>> getProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
-        Optional <Donor> donor = donorRepository.findByEmail(email);
+        Optional<Donor> donor = donorRepository.findByEmail(email);
         if (donor.isPresent()) {
             return ResponseEntity.ok(ApiResponse.success("Profile retrieved successfully", donor.get()));
         } else {
@@ -48,22 +51,25 @@ public class DonorController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Amount must be greater than 50/-");
         }
 
-        //Check payment
-        PaymentController paymentController = new PaymentController(paymentService);
-        boolean paymentSuccess = paymentController.processPayment(donor.getUserId(), donor.getAmount());
+        if (donor.getNgoID() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No NGO found");
+        }
+
+        boolean paymentSuccess = paymentService.processPayment();
 
         if (!paymentSuccess) {
+            paymentRepository.save(new Payment(donor.getDonorId(), donor.getNgoID(), donor.getAmount(), "FAILED"));
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .body("Payment failed. Donation not processed.");
         }
 
-        //Generate unique ID and timestamp
-        donor.initialize();
-        donorRepository.save(donor);
-
-        //Save in NGO collection for manual approval
-        NGO ngoDonation = new NGO(donor);
-        ngoRepository.save(ngoDonation);
+        // Save payment with SUCCESS status
+        //ObjectID will be its transaction ID;
+        Payment payment = (new Payment(donor.getDonorId(), donor.getNgoID(), donor.getAmount(), "SUCCESS"));
+        paymentRepository.save(payment);
+        //Sohan nur //when user logs in a method in spring security can be created so that his user id is stored and set there
+        //and in newPayment(donor.getDonorId() <-- will use it. cause user won't be sending their id everytime
+        // they make donation, till then I am using json format for simplicity
 
         return ResponseEntity.ok("Payment successful. Donation sent for NGO approval.");
     }
