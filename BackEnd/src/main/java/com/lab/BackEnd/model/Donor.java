@@ -26,6 +26,8 @@ public class Donor {
     private String address;
     private String occupation;
     private String profileImage;
+
+    //not controlled by donor
     private Double totalDonated = 0.0;
     private LocalDateTime registrationDate = LocalDateTime.now();
     private String userId;
@@ -36,12 +38,6 @@ public class Donor {
     private String ngoID;
 
     public Donor() {
-    }
-
-    public void initialize() {
-        this.donationId = UUID.randomUUID().toString();
-        this.createdAt = LocalDateTime.now();
-        this.approved = false; // default false
     }
 
 }
