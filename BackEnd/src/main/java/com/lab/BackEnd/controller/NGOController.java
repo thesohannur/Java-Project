@@ -1,12 +1,10 @@
 package com.lab.BackEnd.controller;
 
 import com.lab.BackEnd.dto.response.ApiResponse;
-import com.lab.BackEnd.model.Donor;
 import com.lab.BackEnd.model.NGO;
 import com.lab.BackEnd.model.Payment;
-import com.lab.BackEnd.repository.DonorRepository;
 import com.lab.BackEnd.repository.PaymentRepository;
-import com.lab.BackEnd.repository.ngoRepository;
+import com.lab.BackEnd.repository.NGORepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +22,7 @@ import java.util.Optional;
 public class NGOController {
 
     @Autowired
-    private ngoRepository ngoRepository;
+    private NGORepository ngoRepository;
     @Autowired
     private PaymentRepository paymentRepository;
 
