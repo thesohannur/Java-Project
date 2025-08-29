@@ -2,13 +2,19 @@ package com.lab.BackEnd.controller;
 
 import com.lab.BackEnd.dto.response.ApiResponse;
 import com.lab.BackEnd.model.Donor;
+import com.lab.BackEnd.model.Payment;
 import com.lab.BackEnd.repository.DonorRepository;
+import com.lab.BackEnd.repository.PaymentRepository;
+import com.lab.BackEnd.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -18,8 +24,12 @@ public class DonorController {
 
     @Autowired
     private DonorRepository donorRepository;
+    @Autowired
+    private PaymentService paymentService;
+    @Autowired
+    private PaymentRepository paymentRepository;
 
-    @GetMapping("/profile")
+    @GetMapping("/profile")  //@Sohan // Not tested // need to be tested by using JWT
     public ResponseEntity<ApiResponse<Donor>> getProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -31,4 +41,76 @@ public class DonorController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PutMapping("/profile")  //@Sohan // Not tested // need to be tested by using JWT
+    public ResponseEntity<Donor> updateProfile(@RequestBody Donor updatedDonor) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        Donor donor = donorRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
+
+        // Update allowed fields
+        donor.setFirstName(updatedDonor.getFirstName());
+        donor.setLastName(updatedDonor.getLastName());
+        donor.setPhoneNumber(updatedDonor.getPhoneNumber());
+        donor.setAddress(updatedDonor.getAddress());
+        donor.setOccupation(updatedDonor.getOccupation());
+        donor.setProfileImage(updatedDonor.getProfileImage());
+
+        donorRepository.save(donor);
+
+        return ResponseEntity.ok(donor);
+    }
+
+    @DeleteMapping("/profile")  //@Sohan // Not tested // need to be tested by using JWT
+    public ResponseEntity<String> deleteProfile() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        Donor donor = donorRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
+
+        donorRepository.delete(donor);
+
+        return ResponseEntity.ok("Profile deleted successfully");
+    }
+
+
+    @PostMapping("/donate")
+    public ResponseEntity<String> donate(@RequestBody Donor donor) {
+
+        if (donor.getAmount() == null || donor.getAmount() <= 50) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Amount must be greater than 50/-");
+        }
+
+        if (donor.getNgoID() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No NGO found");
+        }
+
+        boolean paymentSuccess = paymentService.processPayment();
+
+        if (!paymentSuccess) {
+            paymentRepository.save(new Payment(donor.getDonorId(), donor.getNgoID(), donor.getAmount(), "FAILED"));
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body("Payment failed. Donation not processed.");
+        }
+
+        // Save payment with SUCCESS status
+        //ObjectID will be its transaction ID;
+        Payment payment = (new Payment(donor.getDonorId(), donor.getNgoID(), donor.getAmount(), "SUCCESS"));
+        paymentRepository.save(payment);
+        //@Sohan //when user logs in a method in spring security can be created so that his user id is stored and set there
+        //and in newPayment(donor.getDonorId() <-- will use it. cause user won't be sending their id everytime
+        // they make donation, till then I am using json format for simplicity // maybe using authentication.getID();
+
+        return ResponseEntity.ok("Payment successful. Donation sent for NGO approval.");
+    }
+
+    // Get donation history for a donor // frontend shall sum up the amount
+    @GetMapping("/{donorId}")
+    public List<Payment> getDonationsByUser(@PathVariable String donorId) {
+        return paymentRepository.findByDonorId(donorId);
+    }
+
 }
