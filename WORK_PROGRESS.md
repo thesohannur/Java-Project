@@ -215,3 +215,75 @@ volunteer_opportunities: [
 ```
 
 This updated workflow covers **both standing volunteer opportunities and campaign-linked volunteer calls**, providing NGOs with flexibility to engage donors any time.
+
+
+---
+
+# REST Endpoints & Example Payloads
+
+| Method | Path | Role | Purpose |
+|--------|------|------|---------|
+| POST   | /api/ngo/volunteer-opportunities        | NGO   | Create standing or campaign-linked volunteer opportunity |
+| PUT    | /api/ngo/volunteer-opportunities/{id}/close | NGO | Close/disable volunteer opportunity |
+| GET    | /api/donor/volunteer-opportunities      | Donor | Browse all active volunteer opportunities |
+| POST   | /api/donor/volunteer                    | Donor | Apply to volunteer |
+| GET    | /api/donor/volunteers                   | Donor | View own volunteer applications/history |
+| GET    | /api/ngo/volunteers                     | NGO   | List volunteer applications for NGO |
+| PUT    | /api/ngo/volunteers/{volId}/approve     | NGO   | Approve volunteer application |
+| PUT    | /api/ngo/volunteers/{volId}/complete    | NGO   | Mark volunteer work completed |
+
+## 1 Create Volunteer Opportunity (POST /api/ngo/volunteer-opportunities)
+
+```json
+{
+  "title": "Weekend Literacy Tutor",
+  "description": "Teach basic reading to children in grades 3-5.",
+  "location": "Community Center – Room 2",
+  "startDate": "2025-09-15T09:00:00",
+  "endDate":   "2025-09-15T13:00:00",
+  "maxVolunteers": 10,
+  "skillsRequired": ["Teaching", "Patience"],
+  "linkedCampaignId": null          // or "camp123" when disaster-linked
+}
+```
+
+## 2 Apply to Volunteer (POST /api/donor/volunteer)
+
+```json
+{
+  "opportunityId": "opp123",
+  "message": "I have prior experience tutoring at shelters.",
+  "hoursCommitted": 4
+}
+```
+
+## 3 Approve Volunteer (PUT /api/ngo/volunteers/{volId}/approve)
+
+*No request body required - JWT for NGO authentication*
+
+## 4 Complete Volunteer Work (PUT /api/ngo/volunteers/{volId}/complete)
+
+```json
+{
+  "hoursDone": 4
+}
+```
+
+## Typical Success Response Wrapper
+
+```json
+{
+  "success": true,
+  "message": "Volunteer application submitted",
+  "data": {
+    "volunteerId": "vol567",
+    "status": "PENDING",
+    "hoursCommitted": 4,
+    "applicationDate": "2025-08-30T12:06:00"
+  }
+}
+```
+
+
+## NEED TO FIX
+* when try to pay sometimes shows bad gateway

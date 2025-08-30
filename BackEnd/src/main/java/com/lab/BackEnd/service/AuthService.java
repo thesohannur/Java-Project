@@ -12,7 +12,7 @@ import com.lab.BackEnd.model.User;
 import com.lab.BackEnd.model.enums.UserRole;
 import com.lab.BackEnd.repository.AdminRepository;
 import com.lab.BackEnd.repository.DonorRepository;
-import com.lab.BackEnd.repository.ngoRepository;
+import com.lab.BackEnd.repository.NGORepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,7 +31,7 @@ public class AuthService {
     private DonorRepository donorRepository;
 
     @Autowired
-    private ngoRepository ngoRepository;
+    private NGORepository ngoRepository;
 
     @Autowired
     private AdminRepository adminRepository;
