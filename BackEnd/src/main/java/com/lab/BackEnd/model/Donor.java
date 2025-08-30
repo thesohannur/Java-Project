@@ -2,6 +2,7 @@ package com.lab.BackEnd.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @Document(collection = "donors")
 @Getter
 @Setter
+@NoArgsConstructor
 public class Donor {
     @Id
     private String donorId;
@@ -36,8 +38,5 @@ public class Donor {
     private String donationId;
     private LocalDateTime createdAt;
     private String ngoID;
-
-    public Donor() {
-    }
 
 }

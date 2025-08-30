@@ -1,15 +1,18 @@
 package com.lab.BackEnd.controller;
 
+import com.lab.BackEnd.dto.request.VolunteerRequest;
 import com.lab.BackEnd.dto.response.ApiResponse;
 import com.lab.BackEnd.model.Donor;
 import com.lab.BackEnd.model.Payment;
+import com.lab.BackEnd.model.Volunteer;
 import com.lab.BackEnd.repository.DonorRepository;
 import com.lab.BackEnd.repository.PaymentRepository;
 import com.lab.BackEnd.service.PaymentService;
+import com.lab.BackEnd.service.VolunteerService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,98 +22,102 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/donor")
-// Remove @CrossOrigin - handled globally
 public class DonorController {
 
-    @Autowired
-    private DonorRepository donorRepository;
-    @Autowired
-    private PaymentService paymentService;
-    @Autowired
-    private PaymentRepository paymentRepository;
+    @Autowired private DonorRepository donorRepository;
+    @Autowired private PaymentService paymentService;
+    @Autowired private PaymentRepository paymentRepository;
+    @Autowired private VolunteerService volunteerService;
 
-    @GetMapping("/profile")  //@Sohan // Not tested // need to be tested by using JWT
+    /* ─────────────────── PROFILE ENDPOINTS ─────────────────── */
+
+    @GetMapping("/profile")
     public ResponseEntity<ApiResponse<Donor>> getProfile() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Optional<Donor> donor = donorRepository.findByEmail(email);
-        if (donor.isPresent()) {
-            return ResponseEntity.ok(ApiResponse.success("Profile retrieved successfully", donor.get()));
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+
+        return donor.map(d ->
+                        ResponseEntity.ok(ApiResponse.success("Profile retrieved", d)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/profile")  //@Sohan // Not tested // need to be tested by using JWT
-    public ResponseEntity<Donor> updateProfile(@RequestBody Donor updatedDonor) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<Donor>> updateProfile(@RequestBody Donor updated) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Donor donor = donorRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
 
-        // Update allowed fields
-        donor.setFirstName(updatedDonor.getFirstName());
-        donor.setLastName(updatedDonor.getLastName());
-        donor.setPhoneNumber(updatedDonor.getPhoneNumber());
-        donor.setAddress(updatedDonor.getAddress());
-        donor.setOccupation(updatedDonor.getOccupation());
-        donor.setProfileImage(updatedDonor.getProfileImage());
+        donor.setFirstName(updated.getFirstName());
+        donor.setLastName(updated.getLastName());
+        donor.setPhoneNumber(updated.getPhoneNumber());
+        donor.setAddress(updated.getAddress());
+        donor.setOccupation(updated.getOccupation());
+        donor.setProfileImage(updated.getProfileImage());
 
         donorRepository.save(donor);
-
-        return ResponseEntity.ok(donor);
+        return ResponseEntity.ok(ApiResponse.success("Profile updated", donor));
     }
 
-    @DeleteMapping("/profile")  //@Sohan // Not tested // need to be tested by using JWT
-    public ResponseEntity<String> deleteProfile() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-
+    @DeleteMapping("/profile")
+    public ResponseEntity<ApiResponse<String>> deleteProfile() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Donor donor = donorRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
 
         donorRepository.delete(donor);
-
-        return ResponseEntity.ok("Profile deleted successfully");
+        return ResponseEntity.ok(ApiResponse.success("Profile deleted"));
     }
 
+    /* ─────────────────── MONEY DONATION ─────────────────── */
 
     @PostMapping("/donate")
-    public ResponseEntity<String> donate(@RequestBody Donor donor) {
+    public ResponseEntity<ApiResponse<String>> donate(@RequestBody Donor dto) {
 
-        if (donor.getAmount() == null || donor.getAmount() <= 50) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Amount must be greater than 50/-");
-        }
+        if (dto.getAmount() == null || dto.getAmount() <= 50)
+            return ResponseEntity.badRequest().body(ApiResponse.error("Amount must be >50"));
 
-        if (donor.getNgoID() == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No NGO found");
-        }
+        if (dto.getNgoID() == null)
+            return ResponseEntity.badRequest().body(ApiResponse.error("NGO ID missing"));
 
-        boolean paymentSuccess = paymentService.processPayment();
-
-        if (!paymentSuccess) {
-            paymentRepository.save(new Payment(donor.getDonorId(), donor.getNgoID(), donor.getAmount(), "FAILED"));
+        if (!paymentService.processPayment()) {
+            paymentRepository.save(new Payment(dto.getDonorId(), dto.getNgoID(), dto.getAmount(), "FAILED"));
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                    .body("Payment failed. Donation not processed.");
+                    .body(ApiResponse.error("Payment failed"));
         }
 
-        // Save payment with SUCCESS status
-        //ObjectID will be its transaction ID;
-        Payment payment = (new Payment(donor.getDonorId(), donor.getNgoID(), donor.getAmount(), "SUCCESS"));
-        paymentRepository.save(payment);
-        //@Sohan //when user logs in a method in spring security can be created so that his user id is stored and set there
-        //and in newPayment(donor.getDonorId() <-- will use it. cause user won't be sending their id everytime
-        // they make donation, till then I am using json format for simplicity // maybe using authentication.getID();
-
-        return ResponseEntity.ok("Payment successful. Donation sent for NGO approval.");
+        paymentRepository.save(new Payment(dto.getDonorId(), dto.getNgoID(), dto.getAmount(), "SUCCESS"));
+        return ResponseEntity.ok(ApiResponse.success("Donation recorded"));
     }
 
-    // Get donation history for a donor // frontend shall sum up the amount
     @GetMapping("/{donorId}")
     public List<Payment> getDonationsByUser(@PathVariable String donorId) {
         return paymentRepository.findByDonorId(donorId);
     }
 
+    /* ─────────────────── VOLUNTEER ENDPOINTS ─────────────────── */
+
+    @PostMapping("/volunteer")
+    public ResponseEntity<ApiResponse<Volunteer>> applyVolunteer(@Valid @RequestBody VolunteerRequest req) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Donor donor = donorRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
+
+        Volunteer volunteer = volunteerService.apply(
+                donor.getDonorId(),
+                req.getOpportunityId(),
+                req.getMessage(),
+                req.getHoursCommitted());
+
+        return ResponseEntity.ok(ApiResponse.success("Volunteer application submitted", volunteer));
+    }
+
+    @GetMapping("/volunteers")
+    public ResponseEntity<ApiResponse<List<Volunteer>>> myVolunteers() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Donor donor = donorRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
+
+        List<Volunteer> history = volunteerService.donorHistory(donor.getDonorId());
+        return ResponseEntity.ok(ApiResponse.success("Volunteer history", history));
+    }
 }
