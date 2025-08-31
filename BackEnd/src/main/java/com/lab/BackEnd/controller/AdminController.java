@@ -41,10 +41,57 @@ public class AdminController {
 
     @GetMapping("/allUnApproved") //endpoint for admin to see all the Unapproved campaigns
     public ResponseEntity<List<Campaign>> getAllUnapprovedCampaigns() {
-        List<Campaign> campaigns = campaignRepository.findByApproved(false);
+        List<Campaign> campaigns = campaignRepository.findByApprovedFalseAndPendingCheckupFalse();
         if (campaigns.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(campaigns);
     }
+
+    @PutMapping("/approve-campaign/{campaignId}")
+    public ResponseEntity<?> approveCampaign(@PathVariable String campaignId) {
+        Optional <Campaign> campaigns = campaignRepository.findById(campaignId);
+        if (campaigns.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        if(campaigns.get().isApproved())
+            return ResponseEntity.badRequest().body("Campaign already approved");
+
+        campaigns.get().setApproved(true);
+        campaignRepository.save(campaigns.get());
+        return ResponseEntity.ok().body(campaigns);
+    }
+
+    @PutMapping("/reject-campaign/{campaignId}")
+    public ResponseEntity<?> rejectCampaign(@PathVariable String campaignId, @RequestBody String feedback) {
+        Optional <Campaign> campaigns = campaignRepository.findById(campaignId);
+        if (campaigns.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        if(campaigns.get().isApproved()) {
+            return ResponseEntity.badRequest().body("Campaign already approved");
+        }
+
+        if(feedback.isEmpty()) {
+            return ResponseEntity.badRequest().body("Feedback cannot be empty");
+        }
+
+        Integer rejectStatus = campaigns.get().getRejectFlag();
+        rejectStatus++;
+        if(rejectStatus >= 2) {
+            campaignRepository.deleteById(campaignId);
+            return ResponseEntity.ok().body("Due to double refusal campaign deleted successfully");
+        }
+        campaigns.get().setRejectFlag(rejectStatus);
+        campaigns.get().setApproved(false);
+        campaigns.get().setFeedback(feedback);
+        campaigns.get().setPendingCheckup(true);
+        campaignRepository.save(campaigns.get());
+        return ResponseEntity.ok().body(campaigns);
+    }
+
+
+
+
 }

@@ -204,27 +204,12 @@ public class NGOController {
             existing.setManualDeletionAllowed(true);
         }
 
+        existing.setPendingCheckup(false);
+
         Campaign saved = campaignRepository.save(existing);
         return ResponseEntity.ok(saved);
     }
 
-    @DeleteMapping("/deleteCampaign/{campaignId}")
-    public ResponseEntity<?> deleteCampaign(@PathVariable String campaignId) {
-        Optional<Campaign> campaignOpt = campaignRepository.findById(campaignId);
 
-        if (campaignOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Campaign not found");
-        }
-
-        Campaign campaign = campaignOpt.get();
-
-        if (!campaign.isManualDeletionAllowed()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Campaign cannot be deleted. Expiry date has been set.");
-        }
-
-        campaignRepository.deleteById(campaignId);
-        return ResponseEntity.ok("Campaign deleted successfully.");
-    }
 
 }

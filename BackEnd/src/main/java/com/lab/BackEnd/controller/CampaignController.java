@@ -22,13 +22,25 @@ public class CampaignController {
     @Autowired
     private CampaignRepository campaignRepository;
 
-    @GetMapping("/allUnApproved") //endpoint for admin to see all the approved campaigns
-    public ResponseEntity<List<Campaign>> getAllUnapprovedCampaigns() {
-        List<Campaign> campaigns = campaignRepository.findByApproved(false);
-        if (campaigns.isEmpty()) {
-            return ResponseEntity.noContent().build();
+    @DeleteMapping("/deleteCampaign/{campaignId}")
+    public ResponseEntity<?> deleteCampaign(@PathVariable String campaignId) {
+        Optional<Campaign> campaignOpt = campaignRepository.findById(campaignId);
+
+        if (campaignOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Campaign not found");
         }
-        return ResponseEntity.ok(campaigns);
+
+        Campaign campaign = campaignOpt.get();
+
+        if (!campaign.isManualDeletionAllowed()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Campaign cannot be deleted. Expiry date has been set.");
+        }
+
+        campaignRepository.deleteById(campaignId);
+        return ResponseEntity.ok("Campaign deleted successfully.");
     }
+
+
 
 }

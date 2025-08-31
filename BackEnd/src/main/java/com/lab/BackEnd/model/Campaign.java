@@ -23,6 +23,9 @@ public class Campaign {
     private boolean approved;
     private String description;
     private boolean manualDeletionAllowed = false;
+    private Integer rejectFlag;
+    private String feedback;
+    private Boolean pendingCheckup;
 
     public Campaign() {}
 
@@ -33,6 +36,9 @@ public class Campaign {
         this.volunteerTime = volunteerTime;
         this.approved = false;
         this.description = description;
+        this.rejectFlag = 0;
+        feedback = null;
+        pendingCheckup = false;
     }
 }
 

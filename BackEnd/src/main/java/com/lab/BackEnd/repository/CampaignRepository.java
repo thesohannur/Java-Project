@@ -10,4 +10,5 @@ import java.util.List;
 public interface CampaignRepository extends MongoRepository<Campaign, String> {
     List<Campaign> findByNgoEmail(String ngoEmail);
     List<Campaign> findByApproved(Boolean approved);
+    List<Campaign> findByApprovedFalseAndPendingCheckupFalse();
 }
