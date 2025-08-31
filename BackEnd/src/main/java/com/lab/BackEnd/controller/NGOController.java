@@ -1,10 +1,8 @@
 package com.lab.BackEnd.controller;
 
 import com.lab.BackEnd.dto.response.ApiResponse;
-import com.lab.BackEnd.model.NGO;
-import com.lab.BackEnd.model.Payment;
-import com.lab.BackEnd.model.Volunteer;
-import com.lab.BackEnd.model.VolunteerOpportunity;
+import com.lab.BackEnd.model.*;
+import com.lab.BackEnd.repository.CampaignRepository;
 import com.lab.BackEnd.repository.NGORepository;
 import com.lab.BackEnd.repository.PaymentRepository;
 import com.lab.BackEnd.service.VolunteerOpportunityService;
@@ -12,6 +10,7 @@ import com.lab.BackEnd.service.VolunteerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -33,6 +32,8 @@ public class NGOController {
     private VolunteerOpportunityService volunteerOpportunityService;
     @Autowired
     private VolunteerService volunteerService;
+    @Autowired
+    private CampaignRepository campaignRepository;
 
     // ═══════════════════ PROFILE MANAGEMENT ═══════════════════
 
@@ -138,6 +139,92 @@ public class NGOController {
         Integer hoursDone = request.get("hoursDone");
         Volunteer volunteer = volunteerService.complete(id, hoursDone);
         return ResponseEntity.ok(ApiResponse.success("Volunteer work marked as completed successfully", volunteer));
+    }
+
+
+    // ═══════════════════ CAMPAIGN MANAGEMENT ═══════════════════
+
+
+
+    //Basic functionalities:
+    //Money will be needed, no need to mention it explicitly
+    //If volunteerTime is mentioned then it will require specific volunteer time from donor otherwise not needed
+    //If expirationTime is null, then need to delete the campaign manually otherwise it has to be deleted manually
+    @PostMapping("/createCampaign")
+    public ResponseEntity<?> createCampaign(@RequestBody Campaign campBody) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+
+        if (campBody.getDescription() == null || campBody.getDescription().length() < 10) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Minimum description length is 10 characters.");
+        }
+
+        // Create and save
+        Campaign campaign = new Campaign(
+                email,
+                campBody.getExpirationTime(),
+                campBody.getVolunteerTime(),
+                campBody.getDescription()
+        );
+
+        Campaign savedCampaign = campaignRepository.save(campaign);
+        return ResponseEntity.ok(savedCampaign);
+    }
+
+    @GetMapping("/viewCampaign")
+    public ResponseEntity<List<Campaign>> getCampaignsByNgo() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        List<Campaign> campaigns = campaignRepository.findByNgoEmail(email);
+        if (campaigns.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(campaigns);
+    }
+
+    @PutMapping("/updateCampaign/{campaignId}") //campaign to be updated by NGO
+    public ResponseEntity<?> updateCampaign(@PathVariable String campaignId, @RequestBody Campaign updatedData) {
+        Optional<Campaign> existingOpt = campaignRepository.findById(campaignId);
+        if (existingOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Campaign not found");
+        }
+
+        Campaign existing = existingOpt.get();
+
+        if (updatedData.getVolunteerTime() != null) {
+            existing.setVolunteerTime(updatedData.getVolunteerTime());
+        }
+
+        if (updatedData.getExpirationTime() != null) {
+            existing.setExpirationTime(updatedData.getExpirationTime()); // Expecting Promittee (frontend) to send proper ISO date
+            existing.setManualDeletionAllowed(false); // reset that means cannot be deleted manually
+        } else {
+            existing.setExpirationTime(null);
+            existing.setManualDeletionAllowed(true);
+        }
+
+        Campaign saved = campaignRepository.save(existing);
+        return ResponseEntity.ok(saved);
+    }
+
+    @DeleteMapping("/deleteCampaign/{campaignId}")
+    public ResponseEntity<?> deleteCampaign(@PathVariable String campaignId) {
+        Optional<Campaign> campaignOpt = campaignRepository.findById(campaignId);
+
+        if (campaignOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Campaign not found");
+        }
+
+        Campaign campaign = campaignOpt.get();
+
+        if (!campaign.isManualDeletionAllowed()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Campaign cannot be deleted. Expiry date has been set.");
+        }
+
+        campaignRepository.deleteById(campaignId);
+        return ResponseEntity.ok("Campaign deleted successfully.");
     }
 
 }

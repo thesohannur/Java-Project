@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/camp/**").permitAll()
+                        .requestMatchers("/api/camp/**").hasAnyRole("NGO", "DONOR", "ADMIN")
                         .requestMatchers("/api/donor/**").hasRole("DONOR")
                         .requestMatchers("/api/ngo/**").hasRole("NGO")
                         .requestMatchers("/api/ngo/volunteers/**").hasAnyRole("NGO", "ADMIN")

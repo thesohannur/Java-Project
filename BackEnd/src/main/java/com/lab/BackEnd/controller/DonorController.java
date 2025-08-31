@@ -2,9 +2,11 @@ package com.lab.BackEnd.controller;
 
 import com.lab.BackEnd.dto.request.VolunteerRequest;
 import com.lab.BackEnd.dto.response.ApiResponse;
+import com.lab.BackEnd.model.Campaign;
 import com.lab.BackEnd.model.Donor;
 import com.lab.BackEnd.model.Payment;
 import com.lab.BackEnd.model.Volunteer;
+import com.lab.BackEnd.repository.CampaignRepository;
 import com.lab.BackEnd.repository.DonorRepository;
 import com.lab.BackEnd.repository.PaymentRepository;
 import com.lab.BackEnd.service.PaymentService;
@@ -28,6 +30,7 @@ public class DonorController {
     @Autowired private PaymentService paymentService;
     @Autowired private PaymentRepository paymentRepository;
     @Autowired private VolunteerService volunteerService;
+    @Autowired private CampaignRepository campaignRepository;
 
     /* ─────────────────── PROFILE ENDPOINTS ─────────────────── */
 
@@ -119,5 +122,17 @@ public class DonorController {
 
         List<Volunteer> history = volunteerService.donorHistory(donor.getDonorId());
         return ResponseEntity.ok(ApiResponse.success("Volunteer history", history));
+    }
+
+    // ═══════════════════ CAMPAIGN MANAGEMENT ═══════════════════
+
+
+    @GetMapping("/allApproved") //endpoint for donor to see all the approved campaigns
+    public ResponseEntity<List<Campaign>> getAllApprovedCampaigns() {
+        List<Campaign> campaigns = campaignRepository.findByApproved(true);
+        if (campaigns.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(campaigns);
     }
 }
