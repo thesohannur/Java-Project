@@ -580,44 +580,31 @@ campaigns: [
     "manualDeletionAllowed": false
   }
 
-Got it ✅
 
-You can add a **Step 7: Donor Makes Donation** section like this:
-
----
-
-
----
-## Step 7: Donor Makes Donation
----
-
-```
+Step 7: Donor Makes Donation
 Donor logs in → Selects campaign → Contributes money and/or volunteer time
-```
 
-### Donor Action:
+Donor Action:
 
-* Navigate to a campaign
-* Enter **donation amount**
-* Optionally provide **volunteer time**
-* Submit donation
+Navigate to a campaign
 
-### System Response:
+Enter donation amount
 
-```java
+Optionally provide volunteer time
+
+Submit donation
+
+System Response:
 POST /api/camp/{campaignId}
-Creates a CampaignDonation record with:
+Creates CampaignDonation:
 ├── donorEmail = loggedInUserEmail
 ├── donationAmount = provided amount
 ├── volunteerTime = optional
-Updates campaign:
+
+Updates Campaign:
 ├── totalRaised += donationAmount
-├── donation added to campaign.donations list
+├── donations list updated
 └── campaign saved
-```
-
----
-
 
 
 
