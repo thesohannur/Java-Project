@@ -579,22 +579,26 @@ campaigns: [
     "expirationTime": "2025-09-30T23:59:00",
     "manualDeletionAllowed": false
   }
+```
 
+---
 
-Step 7: Donor Makes Donation
+## Step 7: Donor Makes Donation
+
+```
 Donor logs in → Selects campaign → Contributes money and/or volunteer time
+```
 
-Donor Action:
+### Donor Action:
 
-Navigate to a campaign
+* Navigate to a campaign
+* Enter **donation amount**
+* Optionally provide **volunteer time**
+* Submit donation
 
-Enter donation amount
+### System Response:
 
-Optionally provide volunteer time
-
-Submit donation
-
-System Response:
+```java
 POST /api/camp/{campaignId}
 Creates CampaignDonation:
 ├── donorEmail = loggedInUserEmail
@@ -605,6 +609,8 @@ Updates Campaign:
 ├── totalRaised += donationAmount
 ├── donations list updated
 └── campaign saved
+```
+
 
 
 
