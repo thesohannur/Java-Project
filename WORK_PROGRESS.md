@@ -582,4 +582,31 @@ campaigns: [
 }
 ```
 
----
+## Step 7: Donor Makes Donation
+
+```
+Donor logs in → Selects campaign → Contributes money and/or volunteer time  (if campaign has a volunteer requirement field available)
+```
+
+### Donor Action:
+
+* Navigate to a campaign
+* Enter **donation amount**
+* Optionally provide **volunteer time** (boolean) (if campaign has a volunteer requirement field available)
+* Submit donation
+
+### System Response:
+
+```java
+POST /api/camp/{campaignId}
+Creates a CampaignDonation record with:
+├── donorEmail = loggedInUserEmail
+├── donationAmount = provided amount
+├── volunteerTime = optional
+Updates campaign:
+├── totalRaised += donationAmount
+├── donation added to campaign.donations list
+└── campaign saved
+```
+
+
