@@ -15,7 +15,7 @@ public class Campaign {
     private String campaignId;
 
     private String donorId;
-    private String ngoId;
+    private String ngoEmail;
     private LocalDateTime creationTime;
     private LocalDateTime expirationTime;
     private Integer amount;
@@ -23,24 +23,22 @@ public class Campaign {
     private boolean approved;
     private String description;
     private boolean manualDeletionAllowed = false;
+    private Integer rejectFlag;
+    private String feedback;
+    private Boolean pendingCheckup;
 
     public Campaign() {}
 
-    public Campaign(String ngoId, String expirationDays, Integer volunteerTime, String description) {
+    public Campaign(String email, LocalDateTime expirationTime, Integer volunteerTime, String description) {
         this.creationTime = LocalDateTime.now();
-        this.ngoId = ngoId;
-
-        if (expirationDays == null || expirationDays.isEmpty() || expirationDays.equals("0")) {
-            this.expirationTime = null; // means no auto-expiry
-            this.manualDeletionAllowed = true;
-        } else {
-            int days = Integer.parseInt(expirationDays);
-            this.expirationTime = LocalDateTime.now().plusDays(days);
-        }
-
+        this.ngoEmail = email;
+        this.expirationTime = expirationTime;
         this.volunteerTime = volunteerTime;
         this.approved = false;
         this.description = description;
+        this.rejectFlag = 0;
+        feedback = null;
+        pendingCheckup = false;
     }
 }
 

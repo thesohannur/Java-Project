@@ -8,5 +8,7 @@ import java.util.List;
 
 @Repository
 public interface CampaignRepository extends MongoRepository<Campaign, String> {
-    List<Campaign> findByNgoId(String ngoId);
+    List<Campaign> findByNgoEmail(String ngoEmail);
+    List<Campaign> findByApproved(Boolean approved);
+    List<Campaign> findByApprovedFalseAndPendingCheckupFalse();
 }
