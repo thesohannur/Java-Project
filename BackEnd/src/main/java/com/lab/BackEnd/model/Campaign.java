@@ -6,6 +6,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Document(collection = "campaign")
 @Getter
@@ -27,6 +29,9 @@ public class Campaign {
     private String feedback;
     private Boolean pendingCheckup;
 
+    private List<CampaignDonation> donations = new ArrayList<>();
+
+
     public Campaign() {}
 
     public Campaign(String email, LocalDateTime expirationTime, Integer volunteerTime, String description) {
@@ -39,6 +44,15 @@ public class Campaign {
         this.rejectFlag = 0;
         feedback = null;
         pendingCheckup = false;
+        this.amount = 0;
+    }
+
+    public void addDonation(CampaignDonation donation) {
+        this.donations.add(donation);
+    }
+
+    public void totalRaised(Integer amount) {
+        this.amount += amount;
     }
 }
 
