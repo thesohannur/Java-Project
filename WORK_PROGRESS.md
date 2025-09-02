@@ -580,17 +580,26 @@ campaigns: [
     "manualDeletionAllowed": false
   }
 
+Got it ✅
+
+You can add a **Step 7: Donor Makes Donation** section like this:
+
+---
+
+
+---
 ## Step 7: Donor Makes Donation
+---
 
 ```
-Donor logs in → Selects campaign → Contributes money and/or volunteer time  (if campaign has a volunteer requirement field available)
+Donor logs in → Selects campaign → Contributes money and/or volunteer time
 ```
 
 ### Donor Action:
 
 * Navigate to a campaign
 * Enter **donation amount**
-* Optionally provide **volunteer time** (boolean) (if campaign has a volunteer requirement field available)
+* Optionally provide **volunteer time**
 * Submit donation
 
 ### System Response:
@@ -607,8 +616,8 @@ Updates campaign:
 └── campaign saved
 ```
 
-}
-```
+---
+
 
 
 
