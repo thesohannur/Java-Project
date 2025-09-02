@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
+const result = await loginNGO(email, password);
+if (result.success) {
+  navigate('/ngo/dashboard'); // After successful login
+}
+
+
 const Login = ({ onSwitchToRegister, selectedRole }) => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [message, setMessage] = useState('');

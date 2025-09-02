@@ -1,0 +1,79 @@
+body, html, .App {
+  margin: 0;
+  margin-left: 100px;
+  padding: 0;
+  height: 100%;
+  background-color: #05300a;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="file"],
+select,
+textarea {
+  padding: 20px;
+  border: none;
+  width: 100%;
+  border-radius: 5px;
+  font-size: 16px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+button {
+  background-color: #14a44d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-top: 20px;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.card {
+  background-color: #116634;
+  padding: 15px;
+  margin-top: 10px;
+  border-radius: 5px;
+  margin-left: 10px;
+  width: 650px;
+}
+
+.form-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 50px 0;
+}
+
+form {
+  background-color: #05300a;
+  padding: 40px;
+  border-radius: 10px;
+  max-width: 700px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.checkbox-container input[type="checkbox"] {
+  margin-right: 10px;
+  transform: scale(1.2); /* Make it a bit larger */
+}
+html {
+  scroll-behavior: smooth;
+}
+

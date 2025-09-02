@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/Auth.css';
 
+import { useNavigate } from 'react-router-dom';
+
 const RegisterAdmin = ({ onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
     fullName: '', // Changed from firstName/lastName

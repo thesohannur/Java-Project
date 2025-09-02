@@ -1,114 +1,132 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import React, { createContext, useContext, useState } from 'react';
 
+// Create the context
 const AuthContext = createContext();
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null); // Initially no user
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    const userData = JSON.parse(localStorage.getItem('userData'));
-
-    if (token && userData) {
-      setUser(userData);
-    }
-    setLoading(false);
-  }, []);
-
-  const login = async (email, password) => {
-    try {
-      const response = await authAPI.login({ email, password });
-
-      if (response.data.success) {
-        const { token, email: userEmail, role, userId, message } = response.data.data;
-
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('userData', JSON.stringify({ email: userEmail, role, userId }));
-
-        setUser({ email: userEmail, role, userId });
-        return { success: true, message: message || 'Login successful!' };
-      } else {
-        return { success: false, message: response.data.message };
-      }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
-      return { success: false, message: errorMessage };
-    }
-  };
-
-  const registerDonor = async (donorData) => {
-    try {
-      const response = await authAPI.registerDonor(donorData);
-      return handleRegistrationResponse(response);
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
-      return { success: false, message: errorMessage };
-    }
-  };
-
+  // ✅ NGO Registration
   const registerNGO = async (ngoData) => {
     try {
-      const response = await authAPI.registerNGO(ngoData);
-      return handleRegistrationResponse(response);
+      setLoading(true);
+
+      // Mock API call
+      console.log("Registering NGO:", ngoData);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setUser({
+        role: 'ngo',
+        ...ngoData,
+      });
+
+      return { success: true };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
-      return { success: false, message: errorMessage };
+      return { success: false, message: 'Registration failed. Try again.' };
+    } finally {
+      setLoading(false);
     }
   };
 
+  // ✅ NGO Login
+  const loginNGO = async (email, password) => {
+    try {
+      setLoading(true);
+
+      if (email === 'ngo@example.com' && password === 'password123') {
+        setUser({
+          role: 'ngo',
+          email,
+          organizationName: 'Sample NGO',
+        });
+        return { success: true };
+      } else {
+        return { success: false, message: 'Invalid credentials' };
+      }
+    } catch (error) {
+      return { success: false, message: 'Login error occurred' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Admin Registration
   const registerAdmin = async (adminData) => {
     try {
-      const response = await authAPI.registerAdmin(adminData);
-      return handleRegistrationResponse(response);
+      setLoading(true);
+
+      console.log('Registering Admin:', adminData);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Mock validation of admin key
+      if (adminData.adminKey !== 'SHOHAY_ADMIN_2025') {
+        return { success: false, message: 'Invalid admin key' };
+      }
+
+      setUser({
+        role: 'admin',
+        email: adminData.email,
+        fullName: adminData.fullName,
+      });
+
+      return { success: true };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
-      return { success: false, message: errorMessage };
+      return { success: false, message: 'Admin registration failed.' };
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRegistrationResponse = (response) => {
-    if (response.data.success) {
-      const { token, email, role, userId, message } = response.data.data;
+  // ✅ Admin Login (Optional: not used in your current login page but here for flexibility)
+  const loginAdmin = async (email, password) => {
+    try {
+      setLoading(true);
 
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('userData', JSON.stringify({ email, role, userId }));
-
-      setUser({ email, role, userId });
-      return { success: true, message: message || 'Registration successful!' };
-    } else {
-      return { success: false, message: response.data.message };
+      // Demo login (replace with real backend auth)
+      if (email === 'admin@example.com' && password === 'adminpass') {
+        setUser({
+          role: 'admin',
+          email,
+          fullName: 'Admin User',
+        });
+        return { success: true };
+      } else {
+        return { success: false, message: 'Invalid admin credentials' };
+      }
+    } catch (error) {
+      return { success: false, message: 'Login error' };
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
     setUser(null);
   };
 
-  const value = {
-    user,
-    login,
-    registerDonor,
-    registerNGO,
-    registerAdmin,
-    logout,
-    loading
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        registerNGO,
+        loginNGO,
+        registerAdmin,
+        loginAdmin,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
+};
+
+// Hook
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

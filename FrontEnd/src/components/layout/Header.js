@@ -2,9 +2,9 @@ import React from 'react';
 
 const Header = ({ user, onLogout }) => {
   return (
-    <header style={{ padding: '1rem', background: '#4caf50', color: 'white' }}>
-      <h2>Shohay - {user?.role} Dashboard</h2>
-      <button onClick={onLogout}>Logout</button>
+    <header style={{ padding: '1rem', backgroundColor: '#f0f0f0' }}>
+      <span>Welcome, {user?.role}</span>
+      <button onClick={onLogout} style={{ marginLeft: '1rem' }}>Logout</button>
     </header>
   );
 };

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/Auth.css';
+import { useNavigate } from 'react-router-dom'; // add this
+const navigate = useNavigate(); // initialize the navigation hook
+
 
 const RegisterDonor = ({ onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
     firstName: '',
-    lastName: '',
+    lastName: '', 
     email: '',
     password: '',
     confirmPassword: '',
@@ -81,11 +84,17 @@ const RegisterDonor = ({ onSwitchToLogin }) => {
 
     const result = await registerDonor(donorData);
 
-    if (result.success) {
-      setMessage('Registration successful! Welcome to Shohay!');
-    } else {
-      setMessage(result.message);
-    }
+   if (result.success) {
+  setMessage('Registration successful! Welcome to Shohay!');
+  
+  // Redirect to dashboard after 1 second (or instantly)
+  setTimeout(() => {
+    navigate('/dashboard');
+  }, 1000); // optional delay
+} else {
+  setMessage(result.message);
+}
+
     setIsLoading(false);
   };
 

@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
+
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/Auth.css';
+ const result = await registerNGO(ngoData);
+if (result.success) {
+  navigate('/ngo/dashboard'); // After successful registration
+};
 
 const RegisterNGO = ({ onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
@@ -20,6 +25,7 @@ const RegisterNGO = ({ onSwitchToLogin }) => {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { registerNGO } = useAuth();
+  
 
   const focusOptions = [
     'Education', 'Healthcare', 'Environment', 'Poverty Alleviation',
@@ -89,6 +95,8 @@ const RegisterNGO = ({ onSwitchToLogin }) => {
     }
     setIsLoading(false);
   };
+ 
+
 
   return (
     <div className="auth-container">
