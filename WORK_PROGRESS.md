@@ -285,5 +285,332 @@ This updated workflow covers **both standing volunteer opportunities and campaig
 ```
 
 
-## NEED TO FIX
-* when try to pay sometimes shows bad gateway
+# Campaign Management System Workflow
+
+## System Flow Overview
+
+The **Campaign Management System** enables NGOs to create, update, and manage fundraising or volunteer-related campaigns. Admins oversee approvals/rejections, while donors can view only approved campaigns. The system also supports automated cleanup of expired campaigns. In case of double rejection of campaign by admin the campaign will got deleted automatically.
+
+---
+
+## Step 1: NGO Creates Campaign
+
+```
+NGO logs in → Creates Campaign → Sets details
+```
+
+### NGO Action:
+
+* Navigate to **"Create Campaign"**
+* Provide details:
+
+  * **Description** (≥ 10 characters, required)
+  * **Volunteer Time** (optional)
+  * **Expiration Time** (optional, ISO format)
+
+### System Response:
+
+```java
+Campaign created with:
+├── ngoEmail = loggedInUserEmail
+├── expirationTime = null or providedDate
+├── volunteerTime = optional
+├── approved = false
+├── pendingCheckup = false
+├── manualDeletionAllowed = true if expirationTime == null
+└── status = CREATED
+```
+
+---
+
+## Step 2: NGO Views and Updates Campaigns
+
+```
+NGO logs in → Views own campaigns → Updates as needed
+```
+
+### NGO Action:
+
+* View campaigns with **GET /api/camp/viewCampaign**
+* Update campaign with **PUT /api/camp/updateCampaign/{id}**
+
+  * Can change volunteerTime
+  * Can set/remove expirationTime
+  * Reset `pendingCheckup` flag
+
+### System Response:
+
+```java
+If updated:
+├── volunteerTime = updated value
+├── expirationTime = new date or null
+├── manualDeletionAllowed = false if expirationTime set
+├── pendingCheckup = false
+└── campaign saved
+```
+
+---
+
+## Step 3: Admin Reviews Campaigns
+
+```
+Admin logs in → Sees unapproved campaigns → Approves or Rejects
+```
+
+### Admin Action:
+
+* View pending campaigns via **GET /api/camp/allUnApproved**
+* Approve campaign with **PUT /api/camp/approve-campaign/{id}**
+* Reject campaign with **PUT /api/camp/reject-campaign/{id}** (with feedback)
+
+### System Response:
+
+```java
+If APPROVED:
+├── campaign.approved = true
+└── campaign saved
+
+If REJECTED:
+├── campaign.rejectFlag += 1
+├── campaign.feedback = feedback message
+├── campaign.pendingCheckup = true
+├── if rejectFlag >= 2 → campaign deleted
+└── campaign saved
+```
+
+---
+
+## Step 4: Donors Browse Campaigns
+
+```
+Donor logs in → Views approved campaigns
+```
+
+### Donor Action:
+
+* Click **"All Approved Campaigns"**
+* Browse list of active campaigns
+
+### System Response:
+
+```java
+GET /api/camp/allApproved
+Returns list where:
+├── approved = true
+└── not expired
+```
+
+---
+
+## Step 5: NGO Deletes Campaign
+
+```
+NGO requests deletion → System checks rules
+```
+
+### NGO Action:
+
+* Call **DELETE /api/camp/deleteCampaign/{id}**
+
+### System Response:
+
+```java
+If expirationTime == null:
+├── manualDeletionAllowed = true
+├── campaign deleted
+└── message = "Campaign deleted successfully"
+
+If expirationTime != null:
+└── manual deletion not allowed → 403 Forbidden
+```
+
+---
+
+## Step 6: System Auto-Deletes Expired Campaigns
+
+```
+System scheduler runs daily at midnight
+```
+
+### Automated Action:
+
+* Job checks all campaigns
+* Deletes expired ones
+
+### System Response:
+
+```java
+If LocalDateTime.now() > expirationTime:
+├── campaign removed from DB
+└── console log "Deleted expired campaign: {description}"
+```
+
+---
+
+## Complete Status Flow
+
+### Campaign Lifecycle:
+
+```
+CREATED → PENDING → APPROVED → ACTIVE → EXPIRED (auto-deletion)
+          ↓
+        REJECTED (→ deleted after 2nd rejection)
+```
+
+### Status Meanings:
+
+* **CREATED**: NGO created campaign, awaiting admin approval
+* **PENDING**: Waiting for admin review
+* **APPROVED**: Admin accepted the campaign
+* **REJECTED**: Campaign rejected (deleted after 2 rejections)
+* **ACTIVE**: Approved and visible to donors
+* **EXPIRED**: Auto-deleted by scheduler after expiration date
+
+---
+
+## Key Differences from Volunteer (Time Donation)
+
+| Volunteer System                                      | Campaign System                                        |
+| ----------------------------------------------------- | ------------------------------------------------------ |
+| Requires NGO approval of donor applications           | Requires Admin approval of campaigns                   |
+| Volunteer slots limit participation                   | No limit on donations                                  |
+| Status: PENDING → APPROVED → IN\_PROGRESS → COMPLETED | Status: CREATED → APPROVED/REJECTED → ACTIVE → EXPIRED |
+| Donors donate time & skills                           | Donors contribute money (and optional volunteer time)  |
+| Manual + real-world coordination                      | Mostly system + admin-driven                           |
+
+---
+
+## Frontend User Experience
+
+### For NGOs:
+
+```
+Dashboard
+├── Create Campaign
+├── View Campaigns
+├── Update Campaign
+└── Delete Campaign (if allowed)
+```
+
+### For Admins:
+
+```
+Dashboard
+├── View Unapproved Campaigns
+├── Approve Campaign
+└── Reject Campaign (with feedback)
+```
+
+### For Donors:
+
+```
+Dashboard
+└── Browse Approved Campaigns
+```
+
+---
+
+## Database Collections
+
+### Campaigns:
+
+```
+campaigns: [
+  { campaignId, ngoEmail, description, expirationTime, volunteerTime, 
+    approved, rejectFlag, feedback, pendingCheckup, manualDeletionAllowed }
+]
+```
+
+---
+
+## REST Endpoints & Example Payloads
+
+| Method | Path                            | Role  | Purpose                                 |
+| ------ | ------------------------------- | ----- | --------------------------------------- |
+| POST   | /api/camp/createCampaign        | NGO   | Create a new campaign                   |
+| GET    | /api/camp/viewCampaign          | NGO   | View campaigns created by logged-in NGO |
+| PUT    | /api/camp/updateCampaign/{id}   | NGO   | Update campaign details                 |
+| DELETE | /api/camp/deleteCampaign/{id}   | NGO   | Delete campaign (if allowed)            |
+| GET    | /api/camp/allUnApproved         | Admin | Browse unapproved campaigns             |
+| PUT    | /api/camp/approve-campaign/{id} | Admin | Approve a campaign                      |
+| PUT    | /api/camp/reject-campaign/{id}  | Admin | Reject campaign (with feedback)         |
+| GET    | /api/camp/allApproved           | Donor | Browse approved campaigns               |
+
+---
+
+## 1 Create Campaign (POST /api/camp/createCampaign)
+
+```json
+{
+  "description": "Flood relief fund for rural areas",
+  "expirationTime": "2025-09-30T23:59:00",
+  "volunteerTime": 20
+}
+```
+
+## 2 Update Campaign (PUT /api/camp/updateCampaign/{id})
+
+```json
+{
+  "volunteerTime": 15,
+  "expirationTime": "2025-10-10T23:59:00"
+}
+```
+
+## 3 Reject Campaign (PUT /api/camp/reject-campaign/{id})
+
+```json
+"Feedback: Campaign lacks detailed plan."
+```
+
+## 4 Delete Campaign (DELETE /api/camp/deleteCampaign/{id})
+
+*No request body required*
+
+## Typical Success Response Wrapper
+
+```json
+{
+  "success": true,
+  "message": "Campaign updated successfully",
+  "data": {
+    "campaignId": "camp123",
+    "status": "APPROVED",
+    "expirationTime": "2025-09-30T23:59:00",
+    "manualDeletionAllowed": false
+  }
+```
+
+---
+
+## Step 7: Donor Makes Donation
+
+```
+Donor logs in → Selects campaign → Contributes money and/or volunteer time
+```
+
+### Donor Action:
+
+* Navigate to a campaign
+* Enter **donation amount**
+* Optionally provide **volunteer time**
+* Submit donation
+
+### System Response:
+
+```java
+POST /api/camp/{campaignId}
+Creates CampaignDonation:
+├── donorEmail = loggedInUserEmail
+├── donationAmount = provided amount
+├── volunteerTime = optional
+
+Updates Campaign:
+├── totalRaised += donationAmount
+├── donations list updated
+└── campaign saved
+```
+
+
+
+
