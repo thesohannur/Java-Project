@@ -42,8 +42,8 @@ public class Campaign {
         this.approved = false;
         this.description = description;
         this.rejectFlag = 0;
-        feedback = null;
-        pendingCheckup = false;
+        this.feedback = null;
+        this.pendingCheckup = false;
         this.amount = 0;
     }
 
