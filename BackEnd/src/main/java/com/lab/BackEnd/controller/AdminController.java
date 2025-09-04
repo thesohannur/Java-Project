@@ -73,10 +73,6 @@ public class AdminController {
             return ResponseEntity.badRequest().body("Campaign already approved");
         }
 
-        if(feedback.isEmpty()) {
-            return ResponseEntity.badRequest().body("Feedback cannot be empty");
-        }
-
         Integer rejectStatus = campaigns.get().getRejectFlag();
         rejectStatus++;
         if(rejectStatus >= 2) {
