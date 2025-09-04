@@ -25,6 +25,16 @@ const AdminDashboard = () => {
   const [activityLogs, setActivityLogs] = useState([]);
   const [notifications, setNotifications] = useState([]);
   
+  // New states for feedback and reports
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [reportConfig, setReportConfig] = useState({
+    type: 'ngo-summary',
+    dateRange: '30',
+    format: 'pdf',
+    includeCharts: true
+  });
+  const [generatingReport, setGeneratingReport] = useState(false);
+  
   // Filters and pagination
   const [filters, setFilters] = useState({
     ngoStatus: 'all',
@@ -38,6 +48,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (user) {
       fetchDashboardData();
+      fetchFeedbacks();
     }
   }, [user]);
 
@@ -45,67 +56,208 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       
-      // Fetch all dashboard data concurrently
-      const [
-        profileRes,
-        statsRes,
-        analyticsRes,
-        healthRes,
-        logsRes
-      ] = await Promise.all([
-        adminAPI.getProfile(),
-        adminAPI.getDashboardStats(),
-        adminAPI.getAnalytics(30),
-        adminAPI.getSystemHealth(),
-        adminAPI.getActivityLogs(0, 10)
-      ]);
+      // Mock data for demonstration - replace with actual API calls
+      const mockStats = {
+        totalNGOs: 245,
+        totalDonors: 1850,
+        verifiedNGOs: 198,
+        pendingVerificationNGOs: 23,
+        newNGOsThisMonth: 12,
+        newDonorsThisMonth: 156,
+        totalDonations: 2500000,
+        activeCampaigns: 45
+      };
+      
+      const mockProfile = {
+        fullName: 'Admin User',
+        adminLevel: 'SUPER_ADMIN',
+        department: 'GENERAL',
+        profileImage: null
+      };
+      
+      const mockLogs = [
+        {
+          action: 'NGO_VERIFIED',
+          description: 'Verified Helping Hands Foundation',
+          timestamp: new Date(),
+          adminName: 'Admin User',
+          target: 'NGO-001',
+          status: 'SUCCESS'
+        },
+        {
+          action: 'DONOR_REGISTERED',
+          description: 'New donor registration approved',
+          timestamp: new Date(Date.now() - 3600000),
+          adminName: 'Admin User',
+          target: 'DONOR-123',
+          status: 'SUCCESS'
+        }
+      ];
 
-      setProfile(API.utils.extractData(profileRes));
-      setDashboardStats(API.utils.extractData(statsRes));
-      setAnalytics(API.utils.extractData(analyticsRes));
-      setSystemHealth(API.utils.extractData(healthRes));
-      setActivityLogs(API.utils.extractData(logsRes));
+      setProfile(mockProfile);
+      setDashboardStats(mockStats);
+      setActivityLogs(mockLogs);
+      setAnalytics({ activeCampaigns: 45, totalDonations: 2500000 });
       
     } catch (error) {
-      setError(API.utils.getErrorMessage(error));
+      setError('Failed to fetch dashboard data: ' + error.message);
       console.error('Dashboard data fetch error:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchFeedbacks = async () => {
+    try {
+      const mockFeedbacks = [
+        {
+          id: 1,
+          type: 'bug',
+          title: 'Login Issue',
+          description: 'Unable to login with correct credentials',
+          user: 'john@example.com',
+          userType: 'donor',
+          priority: 'high',
+          status: 'open',
+          createdAt: new Date('2024-01-15'),
+          category: 'authentication'
+        },
+        {
+          id: 2,
+          type: 'feature',
+          title: 'Mobile App Request',
+          description: 'Please develop a mobile application for easier access',
+          user: 'ngo@helpbd.org',
+          userType: 'ngo',
+          priority: 'medium',
+          status: 'in-progress',
+          createdAt: new Date('2024-01-14'),
+          category: 'enhancement'
+        },
+        {
+          id: 3,
+          type: 'complaint',
+          title: 'Slow Loading',
+          description: 'Dashboard takes too long to load',
+          user: 'donor@gmail.com',
+          userType: 'donor',
+          priority: 'medium',
+          status: 'resolved',
+          createdAt: new Date('2024-01-13'),
+          category: 'performance'
+        }
+      ];
+      setFeedbacks(mockFeedbacks);
+    } catch (error) {
+      console.error('Error fetching feedbacks:', error);
+    }
+  };
+
   const fetchNGOs = async () => {
     try {
-      const response = await adminAPI.getAllNGOs(currentPage, 10, 'registrationDate', 'desc', filters);
-      setNgos(API.utils.extractData(response));
+      // Mock NGO data
+      const mockNGOs = {
+        content: [
+          {
+            ngoId: 'NGO-001',
+            organizationName: 'Helping Hands Foundation',
+            contactPerson: 'John Doe',
+            email: 'contact@helpinghands.org',
+            phoneNumber: '+8801712345678',
+            city: 'Dhaka',
+            state: 'Dhaka',
+            focusAreas: ['Education', 'Healthcare'],
+            verificationStatus: 'PENDING',
+            registrationDate: new Date('2024-01-10'),
+            description: 'A non-profit organization dedicated to helping underprivileged communities...',
+            logo: null
+          },
+          {
+            ngoId: 'NGO-002',
+            organizationName: 'Green Earth Initiative',
+            contactPerson: 'Jane Smith',
+            email: 'info@greenearth.org',
+            phoneNumber: '+8801798765432',
+            city: 'Chittagong',
+            state: 'Chittagong',
+            focusAreas: ['Environment', 'Climate Change'],
+            verificationStatus: 'VERIFIED',
+            registrationDate: new Date('2024-01-05'),
+            description: 'Environmental conservation and climate change awareness organization...',
+            logo: null
+          }
+        ]
+      };
+      setNgos(mockNGOs);
     } catch (error) {
-      setError(API.utils.getErrorMessage(error));
+      setError('Failed to fetch NGOs: ' + error.message);
     }
   };
 
   const handleNGOAction = async (ngoId, action, reason = '') => {
     try {
-      let response;
-      switch (action) {
-        case 'verify':
-          response = await adminAPI.verifyNGO(ngoId);
-          break;
-        case 'reject':
-          response = await adminAPI.rejectNGO(ngoId, reason);
-          break;
-        case 'suspend':
-          response = await adminAPI.updateNGOStatus(ngoId, 'SUSPENDED');
-          break;
-        default:
-          return;
-      }
+      // Mock action handling
+      console.log(`Performing ${action} on NGO ${ngoId}`, reason);
       
-      if (API.utils.isSuccess(response)) {
-        fetchNGOs(); // Refresh NGO list
-        fetchDashboardData(); // Refresh stats
-      }
+      // Update local state
+      setNgos(prev => ({
+        ...prev,
+        content: prev.content.map(ngo => 
+          ngo.ngoId === ngoId 
+            ? { ...ngo, verificationStatus: action === 'verify' ? 'VERIFIED' : 'REJECTED' }
+            : ngo
+        )
+      }));
+      
+      // Refresh dashboard stats
+      fetchDashboardData();
     } catch (error) {
-      setError(API.utils.getErrorMessage(error));
+      setError('Failed to perform action: ' + error.message);
+    }
+  };
+
+  const handleFeedbackStatusUpdate = async (feedbackId, newStatus) => {
+    try {
+      setFeedbacks(prev => 
+        prev.map(feedback => 
+          feedback.id === feedbackId 
+            ? { ...feedback, status: newStatus }
+            : feedback
+        )
+      );
+    } catch (error) {
+      console.error('Error updating feedback status:', error);
+    }
+  };
+
+  const generateReport = async () => {
+    setGeneratingReport(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      const reportData = {
+        title: `${reportConfig.type} Report`,
+        dateRange: reportConfig.dateRange,
+        generatedAt: new Date().toISOString(),
+        data: dashboardStats
+      };
+      
+      const blob = new Blob([JSON.stringify(reportData, null, 2)], {
+        type: 'application/json'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `shohay-${reportConfig.type}-report.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      setError('Failed to generate report: ' + error.message);
+    } finally {
+      setGeneratingReport(false);
     }
   };
 
@@ -113,6 +265,13 @@ const AdminDashboard = () => {
     logout();
     navigate('/auth');
   };
+
+  // Load NGOs when switching to NGO view
+  useEffect(() => {
+    if (activeView === 'ngos') {
+      fetchNGOs();
+    }
+  }, [activeView]);
 
   if (loading) {
     return (
@@ -122,6 +281,202 @@ const AdminDashboard = () => {
       </div>
     );
   }
+
+  // Render Feedback Section
+  const renderFeedbackSection = () => (
+    <div className="feedback-section">
+      <div className="section-header">
+        <h2>💬 User Feedback & Support</h2>
+        <div className="feedback-filters">
+          <select>
+            <option value="all">All Types</option>
+            <option value="bug">Bug Reports</option>
+            <option value="feature">Feature Requests</option>
+            <option value="complaint">Complaints</option>
+          </select>
+          <select>
+            <option value="all">All Status</option>
+            <option value="open">Open</option>
+            <option value="in-progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="feedback-stats">
+        <div className="stat-card">
+          <div className="stat-number">{feedbacks.filter(f => f.status === 'open').length}</div>
+          <div className="stat-label">Open Issues</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-number">{feedbacks.filter(f => f.status === 'in-progress').length}</div>
+          <div className="stat-label">In Progress</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-number">{feedbacks.filter(f => f.status === 'resolved').length}</div>
+          <div className="stat-label">Resolved</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-number">{feedbacks.filter(f => f.priority === 'high').length}</div>
+          <div className="stat-label">High Priority</div>
+        </div>
+      </div>
+
+      <div className="feedback-list">
+        {feedbacks.map(feedback => (
+          <div key={feedback.id} className={`feedback-item ${feedback.priority}`}>
+            <div className="feedback-header">
+              <div className="feedback-info">
+                <h4>{feedback.title}</h4>
+                <div className="feedback-meta">
+                  <span className={`feedback-type ${feedback.type}`}>
+                    {feedback.type === 'bug' ? '🐛' : feedback.type === 'feature' ? '✨' : '⚠️'}
+                    {feedback.type}
+                  </span>
+                  <span className="feedback-user">👤 {feedback.user}</span>
+                  <span className="feedback-date">📅 {feedback.createdAt.toLocaleDateString()}</span>
+                </div>
+              </div>
+              <div className="feedback-actions">
+                <select 
+                  value={feedback.status}
+                  onChange={(e) => handleFeedbackStatusUpdate(feedback.id, e.target.value)}
+                  className={`status-select ${feedback.status}`}
+                >
+                  <option value="open">Open</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+                <span className={`priority-badge ${feedback.priority}`}>
+                  {feedback.priority}
+                </span>
+              </div>
+            </div>
+            <div className="feedback-description">
+              <p>{feedback.description}</p>
+            </div>
+            <div className="feedback-footer">
+              <button className="btn-reply">💬 Reply</button>
+              <button className="btn-assign">👤 Assign</button>
+              <button className="btn-escalate">⬆️ Escalate</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Render Report Generator Section
+  const renderReportSection = () => (
+    <div className="reports-section">
+      <div className="section-header">
+        <h2>📊 Report Generator</h2>
+        <p>Generate comprehensive reports for analysis and compliance</p>
+      </div>
+
+      <div className="report-generator">
+        <div className="report-config">
+          <h3>Report Configuration</h3>
+          
+          <div className="config-group">
+            <label>Report Type</label>
+            <select 
+              value={reportConfig.type}
+              onChange={(e) => setReportConfig({...reportConfig, type: e.target.value})}
+            >
+              <option value="ngo-summary">NGO Summary Report</option>
+              <option value="donor-analytics">Donor Analytics Report</option>
+              <option value="financial-overview">Financial Overview</option>
+              <option value="user-activity">User Activity Report</option>
+              <option value="system-performance">System Performance</option>
+              <option value="compliance-audit">Compliance Audit</option>
+            </select>
+          </div>
+
+          <div className="config-group">
+            <label>Date Range</label>
+            <select 
+              value={reportConfig.dateRange}
+              onChange={(e) => setReportConfig({...reportConfig, dateRange: e.target.value})}
+            >
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="365">Last year</option>
+            </select>
+          </div>
+
+          <div className="config-group">
+            <label>Output Format</label>
+            <select 
+              value={reportConfig.format}
+              onChange={(e) => setReportConfig({...reportConfig, format: e.target.value})}
+            >
+              <option value="pdf">PDF Document</option>
+              <option value="excel">Excel Spreadsheet</option>
+              <option value="csv">CSV File</option>
+              <option value="json">JSON Data</option>
+            </select>
+          </div>
+
+          <div className="config-group">
+            <label className="checkbox-label">
+              <input 
+                type="checkbox"
+                checked={reportConfig.includeCharts}
+                onChange={(e) => setReportConfig({...reportConfig, includeCharts: e.target.checked})}
+              />
+              Include Charts and Visualizations
+            </label>
+          </div>
+
+          <button 
+            className="generate-report-btn"
+            onClick={generateReport}
+            disabled={generatingReport}
+          >
+            {generatingReport ? (
+              <>
+                <span className="spinner"></span>
+                Generating Report...
+              </>
+            ) : (
+              <>
+                📊 Generate Report
+              </>
+            )}
+          </button>
+        </div>
+
+        <div className="report-templates">
+          <h3>Quick Report Templates</h3>
+          <div className="template-grid">
+            <div className="template-card" onClick={() => setReportConfig({...reportConfig, type: 'ngo-summary'})}>
+              <div className="template-icon">🏢</div>
+              <h4>NGO Performance</h4>
+              <p>Comprehensive NGO activity and performance metrics</p>
+            </div>
+            <div className="template-card" onClick={() => setReportConfig({...reportConfig, type: 'financial-overview'})}>
+              <div className="template-icon">💰</div>
+              <h4>Financial Summary</h4>
+              <p>Donation flows, fund allocation, and financial health</p>
+            </div>
+            <div className="template-card" onClick={() => setReportConfig({...reportConfig, type: 'user-activity'})}>
+              <div className="template-icon">👥</div>
+              <h4>User Engagement</h4>
+              <p>User activity, registration trends, and engagement metrics</p>
+            </div>
+            <div className="template-card" onClick={() => setReportConfig({...reportConfig, type: 'compliance-audit'})}>
+              <div className="template-icon">✅</div>
+              <h4>Compliance Audit</h4>
+              <p>Regulatory compliance and audit trail report</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="admin-dashboard">
@@ -192,6 +547,18 @@ const AdminDashboard = () => {
             👥 Donor Management
           </button>
           <button 
+            className={`nav-item ${activeView === 'feedback' ? 'active' : ''}`}
+            onClick={() => setActiveView('feedback')}
+          >
+            💬 Feedback & Support
+          </button>
+          <button 
+            className={`nav-item ${activeView === 'reports' ? 'active' : ''}`}
+            onClick={() => setActiveView('reports')}
+          >
+            📊 Reports
+          </button>
+          <button 
             className={`nav-item ${activeView === 'analytics' ? 'active' : ''}`}
             onClick={() => setActiveView('analytics')}
           >
@@ -255,7 +622,7 @@ const AdminDashboard = () => {
                   <h3>{dashboardStats.verifiedNGOs || 0}</h3>
                   <p>Verified NGOs</p>
                   <span className="stat-change positive">
-                    {((dashboardStats.verifiedNGOs / dashboardStats.totalNGOs) * 100).toFixed(1)}% verified
+                    {dashboardStats.totalNGOs > 0 ? ((dashboardStats.verifiedNGOs / dashboardStats.totalNGOs) * 100).toFixed(1) : 0}% verified
                   </span>
                 </div>
               </div>
@@ -291,15 +658,15 @@ const AdminDashboard = () => {
                 </button>
                 <button 
                   className="action-btn secondary"
-                  onClick={() => setActiveView('analytics')}
+                  onClick={() => setActiveView('reports')}
                 >
-                  📊 View Analytics Report
+                  📊 Generate Reports
                 </button>
                 <button 
                   className="action-btn tertiary"
-                  onClick={() => setActiveView('system')}
+                  onClick={() => setActiveView('feedback')}
                 >
-                  🔧 System Health Check
+                  💬 Review Feedback
                 </button>
               </div>
             </div>
@@ -413,6 +780,12 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Feedback Section */}
+        {activeView === 'feedback' && renderFeedbackSection()}
+
+        {/* Reports Section */}
+        {activeView === 'reports' && renderReportSection()}
 
         {/* Analytics View */}
         {activeView === 'analytics' && (

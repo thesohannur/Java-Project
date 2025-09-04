@@ -1,4 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import FeedbackForm from './components/feedback/FeedbackForm';
+
+import NGOReport from './pages/report/NGOReport';
+
 import {
   BrowserRouter as Router,
   Routes,
