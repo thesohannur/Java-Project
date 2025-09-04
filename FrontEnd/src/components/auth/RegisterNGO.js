@@ -1,230 +1,215 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import '../../styles/Auth.css';
 
-const RegisterNGO = ({ onSwitchToLogin }) => {
+const RegisterNGO = ({ onBackToLogin }) => {
   const [formData, setFormData] = useState({
-    organizationName: '',
-    registrationNumber: '',
     email: '',
     password: '',
-    confirmPassword: '',
-    phone: '',
+    registrationNumber: '',
+    organizationName: '',
+    contactPerson: '',
+    phoneNumber: '',
     address: '',
     website: '',
     description: '',
-    focusAreas: [],
-    contactPersonName: '',
-    contactPersonTitle: ''
+    focusAreas: []
   });
-  const [message, setMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { registerNGO } = useAuth();
-
-  const focusOptions = [
-    'Education', 'Healthcare', 'Environment', 'Poverty Alleviation',
-    'Disaster Relief', 'Animal Welfare', 'Human Rights', 'Technology Access'
-  ];
+  const [focusAreaInput, setFocusAreaInput] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
 
-    if (type === 'checkbox') {
-      setFormData(prev => ({
-        ...prev,
-        focusAreas: checked
-          ? [...prev.focusAreas, value]
-          : prev.focusAreas.filter(area => area !== value)
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+  const addFocusArea = () => {
+    if (focusAreaInput.trim() && !formData.focusAreas.includes(focusAreaInput.trim())) {
+      setFormData({
+        ...formData,
+        focusAreas: [...formData.focusAreas, focusAreaInput.trim()]
+      });
+      setFocusAreaInput('');
     }
+  };
+
+  const removeFocusArea = (area) => {
+    setFormData({
+      ...formData,
+      focusAreas: formData.focusAreas.filter(item => item !== area)
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
 
-    if (formData.password !== formData.confirmPassword) {
-      setMessage('Passwords do not match');
-      return;
+    try {
+      await register(formData, 'NGO');
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
-
-    if (formData.focusAreas.length === 0) {
-      setMessage('Please select at least one focus area');
-      return;
-    }
-
-    // Validate phone number format (Bangladesh format)
-    const phonePattern = /^(\+88)?01[3-9]\d{8}$/;
-    if (!phonePattern.test(formData.phone)) {
-      setMessage('Phone number must be in valid Bangladeshi format (01XXXXXXXXX or +8801XXXXXXXXX)');
-      return;
-    }
-
-    setIsLoading(true);
-    setMessage('');
-
-    const ngoData = {
-      organizationName: formData.organizationName,
-      registrationNumber: formData.registrationNumber,
-      email: formData.email,
-      password: formData.password,
-      phoneNumber: formData.phone, // Backend expects 'phoneNumber'
-      address: formData.address,
-      website: formData.website,
-      description: formData.description,
-      focusAreas: formData.focusAreas,
-      contactPerson: `${formData.contactPersonName} (${formData.contactPersonTitle})` // Combine name and title
-    };
-
-    // Debug: Log the data being sent
-    console.log('NGO data being sent:', ngoData);
-
-    const result = await registerNGO(ngoData);
-
-    if (result.success) {
-      setMessage('Registration successful! Welcome to Shohay!');
-    } else {
-      setMessage(result.message);
-    }
-    setIsLoading(false);
   };
 
   return (
-    <div className="auth-container">
-      <h2>Register NGO</h2>
+    <div className="auth-form">
+      <h2>Register as NGO</h2>
       <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="organizationName"
-          placeholder="Organization Name"
-          value={formData.organizationName}
-          onChange={handleChange}
-          required
-        />
+        {error && <div className="error-message">{error}</div>}
 
-        <input
-          type="text"
-          name="registrationNumber"
-          placeholder="Registration Number"
-          value={formData.registrationNumber}
-          onChange={handleChange}
-          required
-        />
+        <div className="form-group">
+          <label>Email:</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            disabled={loading}
+          />
+        </div>
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Organization Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-
-        <div className="form-row">
+        <div className="form-group">
+          <label>Password:</label>
           <input
             type="password"
             name="password"
-            placeholder="Password"
             value={formData.password}
             onChange={handleChange}
             required
-          />
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
+            minLength="6"
+            disabled={loading}
           />
         </div>
 
         <div className="form-row">
+          <div className="form-group">
+            <label>Registration Number:</label>
+            <input
+              type="text"
+              name="registrationNumber"
+              value={formData.registrationNumber}
+              onChange={handleChange}
+              required
+              disabled={loading}
+            />
+          </div>
+          <div className="form-group">
+            <label>Organization Name:</label>
+            <input
+              type="text"
+              name="organizationName"
+              value={formData.organizationName}
+              onChange={handleChange}
+              required
+              disabled={loading}
+            />
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Contact Person:</label>
+          <input
+            type="text"
+            name="contactPerson"
+            value={formData.contactPerson}
+            onChange={handleChange}
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Phone Number:</label>
           <input
             type="tel"
-            name="phone"
-            placeholder="Phone Number"
-            value={formData.phone}
+            name="phoneNumber"
+            value={formData.phoneNumber}
             onChange={handleChange}
-            required
+            placeholder="+8801XXXXXXXXX"
+            disabled={loading}
           />
         </div>
 
-        <textarea
-          name="address"
-          placeholder="Organization Address"
-          value={formData.address}
-          onChange={handleChange}
-          required
-        />
-
-        <input
-          type="url"
-          name="website"
-          placeholder="Website (optional)"
-          value={formData.website}
-          onChange={handleChange}
-        />
-
-        <textarea
-          name="description"
-          placeholder="Organization Description and Mission"
-          value={formData.description}
-          onChange={handleChange}
-          required
-          style={{ minHeight: '100px' }}
-        />
-
-        <div className="form-row">
+        <div className="form-group">
+          <label>Address:</label>
           <input
             type="text"
-            name="contactPersonName"
-            placeholder="Contact Person Name"
-            value={formData.contactPersonName}
+            name="address"
+            value={formData.address}
             onChange={handleChange}
-            required
-          />
-          <input
-            type="text"
-            name="contactPersonTitle"
-            placeholder="Contact Person Title"
-            value={formData.contactPersonTitle}
-            onChange={handleChange}
-            required
+            disabled={loading}
           />
         </div>
 
-        <div className="focus-areas">
-          <label>Focus Areas (select at least one):</label>
-          <div className="focus-checkboxes">
-            {focusOptions.map(area => (
-              <label key={area} className="checkbox-label">
-                <input
-                  type="checkbox"
-                  value={area}
-                  checked={formData.focusAreas.includes(area)}
-                  onChange={handleChange}
-                />
+        <div className="form-group">
+          <label>Website:</label>
+          <input
+            type="url"
+            name="website"
+            value={formData.website}
+            onChange={handleChange}
+            disabled={loading}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Description:</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows="3"
+            disabled={loading}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Focus Areas:</label>
+          <div className="focus-areas-input">
+            <input
+              type="text"
+              value={focusAreaInput}
+              onChange={(e) => setFocusAreaInput(e.target.value)}
+              placeholder="Add focus area"
+              disabled={loading}
+            />
+            <button type="button" onClick={addFocusArea} disabled={loading}>
+              Add
+            </button>
+          </div>
+          <div className="focus-areas-list">
+            {formData.focusAreas.map((area, index) => (
+              <span key={index} className="focus-area-tag">
                 {area}
-              </label>
+                <button type="button" onClick={() => removeFocusArea(area)} disabled={loading}>
+                  ×
+                </button>
+              </span>
             ))}
           </div>
         </div>
 
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Registering...' : 'Register NGO'}
+        <button type="submit" className="submit-btn" disabled={loading}>
+          {loading ? 'Creating Account...' : 'Register'}
         </button>
       </form>
 
-      {message && <p className="auth-message">{message}</p>}
-
-      <p>
-        Already have an account?{' '}
-        <span className="auth-link" onClick={onSwitchToLogin}>
-          Login here
-        </span>
-      </p>
+      <div className="auth-switch">
+        <p>Already have an account?</p>
+        <button onClick={onBackToLogin} className="switch-btn">
+          Back to Login
+        </button>
+      </div>
     </div>
   );
 };

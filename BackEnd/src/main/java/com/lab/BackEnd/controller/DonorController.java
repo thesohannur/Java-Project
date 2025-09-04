@@ -7,6 +7,7 @@ import com.lab.BackEnd.repository.CampaignRepository;
 import com.lab.BackEnd.repository.DonorRepository;
 import com.lab.BackEnd.repository.PaymentRepository;
 import com.lab.BackEnd.service.PaymentService;
+import com.lab.BackEnd.service.VolunteerOpportunityService;
 import com.lab.BackEnd.service.VolunteerService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,8 @@ public class DonorController {
     private VolunteerService volunteerService;
     @Autowired
     private CampaignRepository campaignRepository;
+    @Autowired
+    private VolunteerOpportunityService volunteerOpportunityService;
 
     /* ─────────────────── PROFILE ENDPOINTS ─────────────────── */
 
@@ -115,6 +118,13 @@ public class DonorController {
         List<Volunteer> history = volunteerService.donorHistory(donor.getDonorId());
         return ResponseEntity.ok(ApiResponse.success("Volunteer history", history));
     }
+
+    @GetMapping("/volunteer-opportunities")
+    public ResponseEntity<List<VolunteerOpportunity>> getAllActiveOpportunities() {
+        List<VolunteerOpportunity> opportunities = volunteerOpportunityService.active();
+        return ResponseEntity.ok(opportunities);
+    }
+
 
     // ═══════════════════ CAMPAIGN MANAGEMENT ═══════════════════
 

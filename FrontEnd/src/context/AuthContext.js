@@ -1,109 +1,126 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { jwtDecode } from 'jwt-decode';
+import api from '../services/api';
+import * as authService from '../services/authService';
 
-const AuthContext = createContext();
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    const userData = JSON.parse(localStorage.getItem('userData'));
-
-    if (token && userData) {
-      setUser(userData);
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        if (decoded.exp * 1000 > Date.now()) {
+          setUser({
+            email: decoded.sub,
+            role: decoded.role,
+            userId: decoded.userId
+          });
+          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+          localStorage.removeItem('token');
+          setToken(null);
+          setUser(null);
+          delete api.defaults.headers.common['Authorization'];
+        }
+      } catch (error) {
+        console.error("Invalid token:", error);
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
+        delete api.defaults.headers.common['Authorization'];
+      }
     }
     setLoading(false);
-  }, []);
+  }, [token]);
 
-  const login = async (email, password) => {
+  const login = async (credentials) => {
     try {
-      const response = await authAPI.login({ email, password });
-
+      const response = await authService.login(credentials);
       if (response.data.success) {
-        const { token, email: userEmail, role, userId, message } = response.data.data;
+        const { token: newToken, email, role, userId } = response.data.data;
 
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('userData', JSON.stringify({ email: userEmail, role, userId }));
+        localStorage.setItem('token', newToken);
+        setToken(newToken);
 
-        setUser({ email: userEmail, role, userId });
-        return { success: true, message: message || 'Login successful!' };
+        const decoded = jwtDecode(newToken);
+        setUser({
+          email: decoded.sub,
+          role: decoded.role,
+          userId
+        });
+
+        api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+        return { role: decoded.role };
       } else {
-        return { success: false, message: response.data.message };
+        throw new Error(response.data.message || 'Login failed');
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
-      return { success: false, message: errorMessage };
-    }
-  };
-
-  const registerDonor = async (donorData) => {
-    try {
-      const response = await authAPI.registerDonor(donorData);
-      return handleRegistrationResponse(response);
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
-      return { success: false, message: errorMessage };
-    }
-  };
-
-  const registerNGO = async (ngoData) => {
-    try {
-      const response = await authAPI.registerNGO(ngoData);
-      return handleRegistrationResponse(response);
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
-      return { success: false, message: errorMessage };
-    }
-  };
-
-  const registerAdmin = async (adminData) => {
-    try {
-      const response = await authAPI.registerAdmin(adminData);
-      return handleRegistrationResponse(response);
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
-      return { success: false, message: errorMessage };
-    }
-  };
-
-  const handleRegistrationResponse = (response) => {
-    if (response.data.success) {
-      const { token, email, role, userId, message } = response.data.data;
-
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('userData', JSON.stringify({ email, role, userId }));
-
-      setUser({ email, role, userId });
-      return { success: true, message: message || 'Registration successful!' };
-    } else {
-      return { success: false, message: response.data.message };
+      console.error('Login error:', error);
+      throw error;
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
+    localStorage.removeItem('token');
+    setToken(null);
     setUser(null);
+    delete api.defaults.headers.common['Authorization'];
+  };
+
+  const register = async (userData, userType) => {
+    try {
+      let response;
+      switch (userType) {
+        case 'DONOR':
+          response = await authService.registerDonor(userData);
+          break;
+        case 'NGO':
+          response = await authService.registerNGO(userData);
+          break;
+        case 'ADMIN':
+          response = await authService.registerAdmin(userData);
+          break;
+        default:
+          throw new Error('Invalid user type');
+      }
+
+      if (response.data.success) {
+        const { token: newToken, email, role, userId } = response.data.data;
+
+        localStorage.setItem('token', newToken);
+        setToken(newToken);
+
+        const decoded = jwtDecode(newToken);
+        setUser({
+          email: decoded.sub,
+          role: decoded.role,
+          userId
+        });
+
+        api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+        return { role: decoded.role };
+      } else {
+        throw new Error(response.data.message || 'Registration failed');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
   };
 
   const value = {
     user,
+    token,
+    loading,
     login,
-    registerDonor,
-    registerNGO,
-    registerAdmin,
     logout,
-    loading
+    register,
+    isAuthenticated: !!token && !!user,
   };
 
   return (
@@ -111,4 +128,12 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

@@ -1,47 +1,40 @@
 import React from 'react';
-import '../../styles/Auth.css';
 
-const RoleSelector = ({ onSelectRole, selectedRole }) => {
-  const roles = [
-    {
-      id: 'donor',
-      title: 'Donor',
-      description: 'Make donations and support causes you care about',
-      icon: '💝'
-    },
-    {
-      id: 'ngo',
-      title: 'NGO',
-      description: 'Create campaigns and manage donation requests',
-      icon: '🏢'
-    },
-    {
-      id: 'admin',
-      title: 'Admin',
-      description: 'Manage platform users and oversee operations',
-      icon: '⚙️'
-    }
-  ];
-
+const RoleSelector = ({ onSelectRole, onBackToLogin }) => {
   return (
-    <div className="role-selector">
+    <div className="auth-form role-selector">
       <h2>Choose Your Role</h2>
-      <p>Select how you'd like to participate in our platform:</p>
+      <p>Select the type of account to create:</p>
 
-      <div className="role-cards">
-        {roles.map((role) => (
-          <div
-            key={role.id}
-            className={`role-card ${selectedRole === role.id ? 'selected' : ''}`}
-            onClick={() => onSelectRole(role.title.toUpperCase())}
-          >
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
-              {role.icon}
-            </div>
-            <h4>{role.title}</h4>
-            <p>{role.description}</p>
-          </div>
-        ))}
+      {/* Force vertical stacking without relying on external CSS */}
+      <div
+        className="role-options-vertical"
+        style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}
+      >
+        <div className="role-option" onClick={() => onSelectRole('Donor')}>
+          <h3>💰 Donor</h3>
+          <p>Donate money and volunteer time to support NGO causes</p>
+          <button className="role-btn">Register as Donor</button>
+        </div>
+
+        <div className="role-option" onClick={() => onSelectRole('NGO')}>
+          <h3>🏢 NGO</h3>
+          <p>Create campaigns, manage volunteers, and receive donations</p>
+          <button className="role-btn">Register as NGO</button>
+        </div>
+
+        <div className="role-option" onClick={() => onSelectRole('Admin')}>
+          <h3>👤 Admin</h3>
+          <p>Oversee and approve NGO campaigns</p>
+          <button className="role-btn">Register as Admin</button>
+        </div>
+      </div>
+
+      <div className="auth-switch" style={{ textAlign: 'center' }}>
+        <p>Already have an account?</p>
+        <button type="button" onClick={onBackToLogin} className="switch-btn">
+          Back to Login
+        </button>
       </div>
     </div>
   );

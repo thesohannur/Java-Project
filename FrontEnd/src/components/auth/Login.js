@@ -1,62 +1,80 @@
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const Login = ({ onSwitchToRegister, selectedRole }) => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [message, setMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+const Login = ({ onSwitchToRegister }) => {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setMessage('');
+    setError('');
+    setLoading(true);
 
-    const result = await login(formData.email, formData.password);
-
-    if (result.success) {
-      setMessage('Login successful! Redirecting...');
-    } else {
-      setMessage(result.message);
+    try {
+      const result = await login(formData);
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
-    <div className="auth-container">
-      <h2>Login {selectedRole && `as ${selectedRole}`}</h2>
+    <div className="auth-form">
+      <h2>Login to Shohay</h2>
       <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        />
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Logging in...' : 'Login'}
+        {error && <div className="error-message">{error}</div>}
+
+        <div className="form-group">
+          <label>Email:</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Password:</label>
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <button type="submit" className="submit-btn" disabled={loading}>
+          {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
-      {message && <p className="auth-message">{message}</p>}
-      <p>
-        Don't have an account?{' '}
-        <span className="auth-link" onClick={onSwitchToRegister}>
-          Register here
-        </span>
-      </p>
+
+      <div className="auth-switch">
+        <p>Don't have an account?</p>
+        <button onClick={onSwitchToRegister} className="switch-btn">
+          Register
+        </button>
+      </div>
     </div>
   );
 };

@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,22 +14,23 @@ import java.util.List;
 public class Campaign {
     @Id
     private String campaignId;
-
     private String donorId;
     private String ngoEmail;
     private LocalDateTime creationTime;
     private LocalDateTime expirationTime;
-    private Integer amount;
+    private Integer amount = 0;
     private Integer volunteerTime;
     private boolean approved;
     private String description;
     private boolean manualDeletionAllowed = false;
-    private Integer rejectFlag;
+    private Integer rejectFlag = 0;
     private String feedback;
-    private Boolean pendingCheckup;
-
+    private Boolean pendingCheckup = false;
     private List<CampaignDonation> donations = new ArrayList<>();
 
+    // New fields for campaign types
+    private boolean acceptsMoney = true;    // Default: accept money
+    private boolean acceptsTime = false;    // Default: no volunteer time
 
     public Campaign() {}
 
@@ -47,6 +47,12 @@ public class Campaign {
         this.amount = 0;
     }
 
+    public Campaign(String email, LocalDateTime expirationTime, Integer volunteerTime, String description, boolean acceptsMoney, boolean acceptsTime) {
+        this(email, expirationTime, volunteerTime, description);
+        this.acceptsMoney = acceptsMoney;
+        this.acceptsTime = acceptsTime;
+    }
+
     public void addDonation(CampaignDonation donation) {
         this.donations.add(donation);
     }
@@ -55,5 +61,3 @@ public class Campaign {
         this.amount += amount;
     }
 }
-
-

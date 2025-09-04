@@ -1,80 +1,44 @@
 import React, { useState } from 'react';
 import Login from '../components/auth/Login';
+import RoleSelector from '../components/auth/RoleSelector';
 import RegisterDonor from '../components/auth/RegisterDonor';
 import RegisterNGO from '../components/auth/RegisterNGO';
 import RegisterAdmin from '../components/auth/RegisterAdmin';
-import RoleSelector from '../components/auth/RoleSelector';
 
 const AuthPage = () => {
-  const [currentView, setCurrentView] = useState('role-select'); // 'login', 'register-donor', 'register-ngo', 'register-admin'
-  const [selectedRole, setSelectedRole] = useState('');
+  // Modes: 'login' | 'roleSelect' | 'registerDonor' | 'registerNGO' | 'registerAdmin'
+  const [mode, setMode] = useState('login');
 
-  const handleRoleSelect = (role) => {
-    setSelectedRole(role);
-    setCurrentView('login');
-  };
+  const goLogin = () => setMode('login');
+  const goRoleSelect = () => setMode('roleSelect');
 
-  const handleSwitchToRegister = () => {
-    if (!selectedRole) {
-      setCurrentView('role-select');
-    } else {
-      setCurrentView(`register-${selectedRole.toLowerCase()}`);
+  const renderContent = () => {
+    switch (mode) {
+      case 'login':
+        return <Login onSwitchToRegister={goRoleSelect} />;
+      case 'roleSelect':
+        return (
+          <RoleSelector
+            onSelectRole={(role) => setMode(`register${role}`)} // Donor | NGO | Admin
+            onBackToLogin={goLogin}
+          />
+        );
+      case 'registerDonor':
+        return <RegisterDonor onBackToLogin={goLogin} />;
+      case 'registerNGO':
+        return <RegisterNGO onBackToLogin={goLogin} />;
+      case 'registerAdmin':
+        return <RegisterAdmin onBackToLogin={goLogin} />;
+      default:
+        return <Login onSwitchToRegister={goRoleSelect} />;
     }
-  };
-
-  const handleSwitchToLogin = () => {
-    setCurrentView('login');
-  };
-
-  const handleBackToRoleSelect = () => {
-    setCurrentView('role-select');
-    setSelectedRole('');
   };
 
   return (
     <div className="auth-page">
-      {currentView === 'role-select' && (
-        <RoleSelector onSelectRole={handleRoleSelect} selectedRole={selectedRole} />
-      )}
-
-      {currentView === 'login' && (
-        <>
-          <button className="back-button" onClick={handleBackToRoleSelect}>
-            ← Back to Role Selection
-          </button>
-          <Login
-            onSwitchToRegister={handleSwitchToRegister}
-            selectedRole={selectedRole}
-          />
-        </>
-      )}
-
-      {currentView === 'register-donor' && (
-        <>
-          <button className="back-button" onClick={handleSwitchToLogin}>
-            ← Back to Login
-          </button>
-          <RegisterDonor onSwitchToLogin={handleSwitchToLogin} />
-        </>
-      )}
-
-      {currentView === 'register-ngo' && (
-        <>
-          <button className="back-button" onClick={handleSwitchToLogin}>
-            ← Back to Login
-          </button>
-          <RegisterNGO onSwitchToLogin={handleSwitchToLogin} />
-        </>
-      )}
-
-      {currentView === 'register-admin' && (
-        <>
-          <button className="back-button" onClick={handleSwitchToLogin}>
-            ← Back to Login
-          </button>
-          <RegisterAdmin onSwitchToLogin={handleSwitchToLogin} />
-        </>
-      )}
+      <div className="auth-container">
+        {renderContent()}
+      </div>
     </div>
   );
 };
