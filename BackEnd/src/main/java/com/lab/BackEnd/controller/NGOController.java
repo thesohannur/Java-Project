@@ -14,7 +14,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,16 +26,93 @@ public class NGOController {
 
     @Autowired
     private NGORepository ngoRepository;
+
     @Autowired
     private PaymentRepository paymentRepository;
+
     @Autowired
     private VolunteerOpportunityService volunteerOpportunityService;
+
     @Autowired
     private VolunteerService volunteerService;
+
     @Autowired
     private CampaignRepository campaignRepository;
 
-    // ═══════════════════ PROFILE MANAGEMENT ═══════════════════
+    // ═══════════════════ PUBLIC ENDPOINTS FOR DONORS ═══════════════════
+
+    @GetMapping("/public/ngos")
+    public ResponseEntity<ApiResponse<List<NGO>>> getAllNGOsPublic(
+            @RequestParam(required = false) String search) {
+        try {
+            List<NGO> ngos;
+            if (search != null && !search.trim().isEmpty()) {
+                ngos = ngoRepository.findByOrganizationNameContainingIgnoreCaseOrAddressContainingIgnoreCase(
+                        search.trim(), search.trim());
+            } else {
+                ngos = ngoRepository.findAll();
+            }
+            return ResponseEntity.ok(ApiResponse.success("NGOs retrieved successfully", ngos));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Failed to retrieve NGOs: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/public/campaigns/active")
+    public ResponseEntity<ApiResponse<List<Campaign>>> getActiveCampaignsPublic() {
+        try {
+            List<Campaign> activeCampaigns = campaignRepository.findByApprovedTrue();
+            return ResponseEntity.ok(ApiResponse.success("Active campaigns retrieved", activeCampaigns));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Failed to retrieve campaigns: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/public/volunteer-opportunities")
+    public ResponseEntity<ApiResponse<List<VolunteerOpportunity>>> getActiveOpportunitiesPublic() {
+        try {
+            List<VolunteerOpportunity> opportunities = volunteerOpportunityService.active();
+            return ResponseEntity.ok(ApiResponse.success("Opportunities retrieved", opportunities));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Failed to retrieve opportunities: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/public/ngos/{ngoId}")
+    public ResponseEntity<ApiResponse<NGO>> getNGODetailsPublic(@PathVariable String ngoId) {
+        try {
+            Optional<NGO> ngo = ngoRepository.findById(ngoId);
+            if (ngo.isPresent()) {
+                return ResponseEntity.ok(ApiResponse.success("NGO details retrieved", ngo.get()));
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Failed to retrieve NGO: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/public/ngos/{ngoId}/campaigns")
+    public ResponseEntity<ApiResponse<List<Campaign>>> getCampaignsByNGOPublic(@PathVariable String ngoId) {
+        try {
+            Optional<NGO> ngo = ngoRepository.findById(ngoId);
+            if (ngo.isPresent()) {
+                List<Campaign> campaigns = campaignRepository.findByNgoEmailAndApprovedTrue(ngo.get().getEmail());
+                return ResponseEntity.ok(ApiResponse.success("NGO campaigns retrieved", campaigns));
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Failed to retrieve NGO campaigns: " + e.getMessage()));
+        }
+    }
+
+    // ═══════════════════ EXISTING NGO ENDPOINTS ═══════════════════
 
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<NGO>> getProfile() {
@@ -191,7 +267,6 @@ public class NGOController {
             Campaign savedCampaign = campaignRepository.save(campaign);
 
             return ResponseEntity.ok(savedCampaign);
-
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to create campaign: " + e.getMessage());
         }
@@ -201,10 +276,12 @@ public class NGOController {
     public ResponseEntity<List<Campaign>> getCampaignsByNgo() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
+
         List<Campaign> campaigns = campaignRepository.findByNgoEmail(email);
         if (campaigns.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
+
         return ResponseEntity.ok(campaigns);
     }
 

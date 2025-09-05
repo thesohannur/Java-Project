@@ -1,25 +1,24 @@
 import api from './api';
 
-// Profile management
-export const getProfile = () => api.get('/ngo/profile');
-export const updateProfile = (payload) => api.patch('/ngo/profile', payload);
+/* ────────────  PROFILE  ──────────── */
+export const getProfile   = () => api.get('/ngo/profile');
+export const updateProfile = (payload) => api.put('/ngo/profile', payload);     // ← PUT, not PATCH
 
-// NGO dashboards
-export const getMyCampaigns = () => api.get('/ngo/campaigns');
+/* ────────────  DASHBOARD DATA  ──────────── */
+export const getMyCampaigns            = () => api.get('/ngo/campaigns');
 export const getMyVolunteerOpportunities = () => api.get('/ngo/volunteer-opportunities');
-export const getVolunteerApplications = () => api.get('/ngo/volunteers');
-export const getMyDonations = () => api.get('/ngo/donations');
+export const getVolunteerApplications  = () => api.get('/ngo/volunteers');
+export const getMyDonations            = () => api.get('/ngo/donations');
 
-// Campaign management
-export const createCampaign = (payload) => api.post('/ngo/campaigns', payload);
-export const updateCampaign = (campaignId, payload) => api.put(`/ngo/campaigns/${campaignId}`, payload);
-export const deleteCampaign = (campaignId) => api.delete(`/ngo/campaigns/${campaignId}`);
+/* ────────────  CAMPAIGNS  ──────────── */
+export const createCampaign = (payload)               => api.post('/ngo/campaigns', payload);
+export const updateCampaign = (id, payload)           => api.put(`/ngo/campaigns/${id}`, payload);
+export const deleteCampaign = (id)                    => api.delete(`/ngo/campaigns/${id}`);
 
-// Volunteer opportunities
-export const createVolunteerOpportunity = (payload) => api.post('/ngo/volunteer-opportunities', payload);
-export const closeVolunteerOpportunity = (id) => api.put(`/ngo/volunteer-opportunities/${id}/close`);
+/* ────────────  VOLUNTEER OPPORTUNITIES  ──────────── */
+export const createVolunteerOpportunity = (payload)   => api.post('/ngo/volunteer-opportunities', payload);
+export const closeVolunteerOpportunity  = (id)        => api.put(`/ngo/volunteer-opportunities/${id}/close`);
 
-// Volunteer management
-export const approveVolunteer = (volunteerId) => api.put(`/ngo/volunteers/${volunteerId}/approve`);
-export const completeVolunteer = (volunteerId, hoursCompleted) =>
-  api.put(`/ngo/volunteers/${volunteerId}/complete`, { hoursDone: hoursCompleted });
+/* ────────────  VOLUNTEER MANAGEMENT  ──────────── */
+export const approveVolunteer  = (id)                 => api.put(`/ngo/volunteers/${id}/approve`);
+export const completeVolunteer = (id, hoursDone)      => api.put(`/ngo/volunteers/${id}/complete`, { hoursDone });

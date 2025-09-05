@@ -51,12 +51,11 @@ const NGODashboard = () => {
     }
   };
 
-  // Updated campaign creation handler for multi-type campaigns
   const handleCreateCampaign = async (campaignData) => {
     try {
       await ngoService.createCampaign(campaignData);
       alert('Campaign created successfully! It is now pending admin approval.');
-      fetchAllData(); // Refresh the campaigns list
+      fetchAllData();
     } catch (err) {
       alert('Failed to create campaign: ' + (err.response?.data || 'Unknown error'));
     }
@@ -166,7 +165,6 @@ const NGODashboard = () => {
           <div className="campaigns-section">
             <h2>My Campaigns</h2>
 
-            {/* Use the new CampaignForm component */}
             <CampaignForm onSubmit={handleCreateCampaign} />
 
             <div className="campaigns-list">
@@ -349,20 +347,141 @@ const NGODashboard = () => {
 
         {activeTab === 'donations' && (
           <div className="donations-section">
-            <h2>Donations Received</h2>
+            <div className="section-header">
+              <h2>💰 Donations Received</h2>
+              <p className="section-subtitle">Track your received donations and manage donor relationships</p>
+            </div>
+
             {donations.length === 0 ? (
-              <p>No donations received yet.</p>
-            ) : (
-              <div className="donations-grid">
-                {donations.map((d) => (
-                  <div key={d.paymentId || d.donationId} className="donation-card">
-                    <p><strong>Amount:</strong> ${Number(d.amount || 0).toLocaleString()}</p>
-                    <p><strong>From:</strong> {d.donorEmail || d.donorId || 'Anonymous'}</p>
-                    <p><strong>Status:</strong> {d.status || 'UNKNOWN'}</p>
-                    <p><strong>Date:</strong> {d.timestamp ? new Date(d.timestamp).toLocaleDateString() : '—'}</p>
-                  </div>
-                ))}
+              <div className="no-data">
+                <div className="no-data-icon">💝</div>
+                <h3>No Donations Yet</h3>
+                <p>Your received donations will appear here once donors start contributing to your campaigns.</p>
               </div>
+            ) : (
+              <>
+                <div className="donations-summary">
+                  <div className="summary-card">
+                    <div className="summary-icon">💵</div>
+                    <div className="summary-content">
+                      <h3>${donations.reduce((total, d) => total + (Number(d.amount) || 0), 0).toLocaleString()}</h3>
+                      <p>Total Raised</p>
+                    </div>
+                  </div>
+                  <div className="summary-card">
+                    <div className="summary-icon">👥</div>
+                    <div className="summary-content">
+                      <h3>{donations.length}</h3>
+                      <p>Total Donations</p>
+                    </div>
+                  </div>
+                  <div className="summary-card">
+                    <div className="summary-icon">📊</div>
+                    <div className="summary-content">
+                      <h3>${Math.round(donations.reduce((total, d) => total + (Number(d.amount) || 0), 0) / donations.length).toLocaleString()}</h3>
+                      <p>Average Gift</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="donations-grid">
+                  {donations.map((donation, index) => (
+                    <div key={donation.paymentId || donation.donationId || index} className="donation-card">
+                      <div className="donation-header">
+                        <div className="donation-amount">
+                          <span className="currency">$</span>
+                          <span className="amount">{Number(donation.amount || 0).toLocaleString()}</span>
+                        </div>
+                        <div className={`donation-status status-${(donation.status || 'unknown').toLowerCase()}`}>
+                          <span className="status-icon">
+                            {donation.status === 'SUCCESS' ? '✅' :
+                             donation.status === 'PENDING' ? '⏳' :
+                             donation.status === 'FAILED' ? '❌' : '❓'}
+                          </span>
+                          <span className="status-text">{donation.status || 'Unknown'}</span>
+                        </div>
+                      </div>
+
+                      <div className="donation-details">
+                        <div className="detail-row">
+                          <div className="detail-label">
+                            <span className="detail-icon">👤</span>
+                            From
+                          </div>
+                          <div className="detail-value">
+                            {donation.donorEmail ? (
+                              <div className="donor-info">
+                                <strong>{donation.donorEmail}</strong>
+                                {donation.donorName && <span className="donor-name">({donation.donorName})</span>}
+                              </div>
+                            ) : (
+                              <span className="donor-id">Donor ID: {String(donation.donorId || 'Anonymous').slice(0, 8)}...</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="detail-row">
+                          <div className="detail-label">
+                            <span className="detail-icon">📅</span>
+                            Date
+                          </div>
+                          <div className="detail-value">
+                            {donation.timestamp ? new Date(donation.timestamp).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : 'Not available'}
+                          </div>
+                        </div>
+
+                        {donation.campaignId && (
+                          <div className="detail-row">
+                            <div className="detail-label">
+                              <span className="detail-icon">🎯</span>
+                              Campaign
+                            </div>
+                            <div className="detail-value">
+                              <span className="campaign-id">Campaign #{String(donation.campaignId).slice(0, 8)}...</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {donation.paymentMethod && (
+                          <div className="detail-row">
+                            <div className="detail-label">
+                              <span className="detail-icon">💳</span>
+                              Method
+                            </div>
+                            <div className="detail-value">
+                              {donation.paymentMethod}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="donation-actions">
+                        <button
+                          className="btn-secondary btn-small"
+                          onClick={() => navigator.clipboard.writeText(donation.paymentId || donation.donationId)}
+                          title="Copy Transaction ID"
+                        >
+                          📋 Copy ID
+                        </button>
+                        {donation.receiptUrl && (
+                          <button
+                            className="btn-secondary btn-small"
+                            onClick={() => window.open(donation.receiptUrl, '_blank')}
+                          >
+                            📄 Receipt
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}

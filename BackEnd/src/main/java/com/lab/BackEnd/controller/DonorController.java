@@ -11,15 +11,15 @@ import com.lab.BackEnd.service.VolunteerOpportunityService;
 import com.lab.BackEnd.service.VolunteerService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -28,14 +28,19 @@ public class DonorController {
 
     @Autowired
     private DonorRepository donorRepository;
+
     @Autowired
     private PaymentService paymentService;
+
     @Autowired
     private PaymentRepository paymentRepository;
+
     @Autowired
     private VolunteerService volunteerService;
+
     @Autowired
     private CampaignRepository campaignRepository;
+
     @Autowired
     private VolunteerOpportunityService volunteerOpportunityService;
 
@@ -45,14 +50,15 @@ public class DonorController {
     public ResponseEntity<ApiResponse<Donor>> getProfile() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Optional<Donor> donor = donorRepository.findByEmail(email);
-
-        return donor.map(d -> ResponseEntity.ok(ApiResponse.success("Profile retrieved", d))).orElseGet(() -> ResponseEntity.notFound().build());
+        return donor.map(d -> ResponseEntity.ok(ApiResponse.success("Profile retrieved", d)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PutMapping("/profile")
     public ResponseEntity<ApiResponse<Donor>> updateProfile(@RequestBody Donor updated) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Donor donor = donorRepository.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
+        Donor donor = donorRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
 
         donor.setFirstName(updated.getFirstName());
         donor.setLastName(updated.getLastName());
@@ -68,94 +74,169 @@ public class DonorController {
     @DeleteMapping("/profile")
     public ResponseEntity<ApiResponse<String>> deleteProfile() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Donor donor = donorRepository.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
+        Donor donor = donorRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
 
         donorRepository.delete(donor);
         return ResponseEntity.ok(ApiResponse.success("Profile deleted"));
     }
 
-    /* ─────────────────── MONEY DONATION ─────────────────── */
+    /* ─────────────────── MONEY DONATION ENDPOINTS ─────────────────── */
 
-    @PostMapping("/donate")
-    public ResponseEntity<ApiResponse<String>> donate(@RequestBody Donor dto) {
+    @PostMapping("/donations")
+    public ResponseEntity<ApiResponse<Payment>> makeDonation(@RequestBody Map<String, Object> donationData) {
+        try {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            Donor donor = donorRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
 
-        if (dto.getAmount() == null || dto.getAmount() <= 50)
-            return ResponseEntity.badRequest().body(ApiResponse.error("Amount must be >50"));
+            // Extract donation data
+            Double amount = Double.valueOf(donationData.get("amount").toString());
+            String ngoId = (String) donationData.get("ngoId");
+            String campaignId = (String) donationData.get("campaignId");
+            String message = (String) donationData.get("message");
 
-        if (dto.getNgoID() == null) return ResponseEntity.badRequest().body(ApiResponse.error("NGO ID missing"));
+            // Validate amount
+            if (amount == null || amount <= 50) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Amount must be greater than 50"));
+            }
 
-        if (!paymentService.processPayment()) {
-            paymentRepository.save(new Payment(dto.getDonorId(), dto.getNgoID(), dto.getAmount(), "FAILED"));
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiResponse.error("Payment failed"));
+            // Validate NGO or campaign
+            if (ngoId == null && campaignId == null) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Either NGO ID or Campaign ID is required"));
+            }
+
+            // Process payment (simulate payment processing)
+            if (!paymentService.processPayment()) {
+                Payment failedPayment = new Payment(donor.getDonorId(), ngoId, amount, "FAILED");
+                paymentRepository.save(failedPayment);
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                        .body(ApiResponse.error("Payment processing failed"));
+            }
+
+            // Create successful payment record
+            Payment payment = new Payment(donor.getDonorId(), ngoId, amount, "SUCCESS");
+            payment.setTimestamp(LocalDateTime.now());
+            if (campaignId != null) {
+                // Add campaign ID to payment if donating through campaign
+                // You'll need to add this field to Payment model
+            }
+
+            Payment savedPayment = paymentRepository.save(payment);
+
+            // Update donor's total donated amount
+            donor.setTotalDonated(donor.getTotalDonated() + amount);
+            donorRepository.save(donor);
+
+            return ResponseEntity.ok(ApiResponse.success("Donation successful", savedPayment));
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Donation failed: " + e.getMessage()));
         }
-
-        paymentRepository.save(new Payment(dto.getDonorId(), dto.getNgoID(), dto.getAmount(), "SUCCESS"));
-        return ResponseEntity.ok(ApiResponse.success("Donation recorded"));
     }
 
-    @GetMapping("/{donorId}")
-    public List<Payment> getDonationsByUser(@PathVariable String donorId) {
-        return paymentRepository.findByDonorId(donorId);
+    @GetMapping("/donations")
+    public ResponseEntity<ApiResponse<List<Payment>>> getDonationHistory() {
+        try {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            Donor donor = donorRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
+
+            List<Payment> donations = paymentRepository.findByDonorId(donor.getDonorId());
+            return ResponseEntity.ok(ApiResponse.success("Donation history retrieved", donations));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Failed to retrieve donation history: " + e.getMessage()));
+        }
     }
 
     /* ─────────────────── VOLUNTEER ENDPOINTS ─────────────────── */
 
-    @PostMapping("/volunteer")
-    public ResponseEntity<ApiResponse<Volunteer>> applyVolunteer(@Valid @RequestBody VolunteerRequest req) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Donor donor = donorRepository.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
+    @PostMapping("/volunteer-applications")
+    public ResponseEntity<ApiResponse<Volunteer>> applyForVolunteer(@Valid @RequestBody VolunteerRequest request) {
+        try {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            Donor donor = donorRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
 
-        Volunteer volunteer = volunteerService.apply(donor.getDonorId(), req.getOpportunityId(), req.getMessage(), req.getHoursCommitted());
+            Volunteer volunteer = volunteerService.apply(
+                    donor.getDonorId(),
+                    request.getOpportunityId(),
+                    request.getMessage(),
+                    request.getHoursCommitted()
+            );
 
-        return ResponseEntity.ok(ApiResponse.success("Volunteer application submitted", volunteer));
-    }
-
-    @GetMapping("/volunteers")
-    public ResponseEntity<ApiResponse<List<Volunteer>>> myVolunteers() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Donor donor = donorRepository.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
-
-        List<Volunteer> history = volunteerService.donorHistory(donor.getDonorId());
-        return ResponseEntity.ok(ApiResponse.success("Volunteer history", history));
-    }
-
-    @GetMapping("/volunteer-opportunities")
-    public ResponseEntity<List<VolunteerOpportunity>> getAllActiveOpportunities() {
-        List<VolunteerOpportunity> opportunities = volunteerOpportunityService.active();
-        return ResponseEntity.ok(opportunities);
-    }
-
-
-    // ═══════════════════ CAMPAIGN MANAGEMENT ═══════════════════
-
-
-    @GetMapping("/allApproved") //endpoint for donor to see all the approved campaigns
-    public ResponseEntity<List<Campaign>> getAllApprovedCampaigns() {
-        List<Campaign> campaigns = campaignRepository.findByApproved(true);
-        if (campaigns.isEmpty()) {
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success("Volunteer application submitted successfully", volunteer));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Failed to submit volunteer application: " + e.getMessage()));
         }
-        return ResponseEntity.ok(campaigns);
     }
 
-    @PostMapping("/camp/{campaignId}")
-    public ResponseEntity<Campaign> donateToCampaign(@PathVariable String campaignId, @RequestBody CampaignDonation donation) {
+    @GetMapping("/volunteer-applications")
+    public ResponseEntity<ApiResponse<List<Volunteer>>> getMyVolunteerApplications() {
+        try {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            Donor donor = donorRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Donor not found"));
 
-        Optional<Campaign> campaignOpt = campaignRepository.findById(campaignId);
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String donorEmail = authentication.getName();
-
-        if (campaignOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            List<Volunteer> applications = volunteerService.donorHistory(donor.getDonorId());
+            return ResponseEntity.ok(ApiResponse.success("Volunteer applications retrieved", applications));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Failed to retrieve volunteer applications: " + e.getMessage()));
         }
+    }
 
-        donation = new CampaignDonation(donorEmail, donation.getDonationAmount(), donation.getVolunteerTime());
-        Campaign campaign = campaignOpt.get();
-        campaign.totalRaised(donation.getDonationAmount());
-        campaign.addDonation(donation);
-        campaignRepository.save(campaign);
+    /* ─────────────────── CAMPAIGN DONATION ENDPOINTS ─────────────────── */
 
-        return ResponseEntity.ok(campaign);
+    @PostMapping("/campaigns/{campaignId}/donate")
+    public ResponseEntity<ApiResponse<CampaignDonation>> donateToCampaign(
+            @PathVariable String campaignId,
+            @RequestBody Map<String, Object> donationData) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String donorEmail = authentication.getName();
+
+            Optional<Campaign> campaignOpt = campaignRepository.findById(campaignId);
+            if (campaignOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Campaign campaign = campaignOpt.get();
+
+            // Check if campaign accepts the type of donation
+            Integer donationAmount = (Integer) donationData.get("donationAmount");
+            Boolean volunteerTime = (Boolean) donationData.get("volunteerTime");
+
+            if (donationAmount != null && !campaign.isAcceptsMoney()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("This campaign does not accept money donations"));
+            }
+
+            if (volunteerTime != null && volunteerTime && !campaign.isAcceptsTime()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("This campaign does not accept time donations"));
+            }
+
+            // Create campaign donation
+            CampaignDonation donation = new CampaignDonation(donorEmail, donationAmount, volunteerTime);
+
+            // Update campaign totals
+            if (donationAmount != null) {
+                campaign.totalRaised(donationAmount);
+            }
+            campaign.addDonation(donation);
+            campaignRepository.save(campaign);
+
+            return ResponseEntity.ok(ApiResponse.success("Campaign donation successful", donation));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Campaign donation failed: " + e.getMessage()));
+        }
     }
 }
