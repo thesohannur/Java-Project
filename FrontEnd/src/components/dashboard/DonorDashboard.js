@@ -1,11 +1,14 @@
+// src/components/dashboard/DonorDashboard.js
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import * as donorService from '../../services/donorService';
 
 const DonorDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('browse-ngos');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Data states
   const [ngos, setNgos] = useState([]);
@@ -27,61 +30,110 @@ const DonorDashboard = () => {
   const [stats, setStats] = useState({
     totalNGOs: 0,
     activeCampaigns: 0,
-    volunteerOpportunities: 0
+    volunteerOpportunities: 0,
   });
 
+  // Debugging: Log user info
   useEffect(() => {
-    fetchInitialData();
-    fetchStats();
-    // eslint-disable-next-line
-  }, [activeTab, campaignFilter]);
+    console.log('DonorDashboard: User info:', user);
+  }, [user]);
 
-  const fetchStats = async () => {
-    try {
-      const response = await fetch('/api/public/statistics');
-      const result = await response.json();
-      if (result.success) setStats(result.data);
-    } catch (error) {
-      console.error('Error fetching stats:', error);
+  // Fetch all data on mount
+  useEffect(() => {
+    fetchAllData();
+  }, []);
+
+  // Refetch campaigns when filter changes
+  useEffect(() => {
+    if (activeTab === 'campaigns') {
+      fetchCampaigns();
     }
-  };
+  }, [campaignFilter]);
 
-  const fetchInitialData = async () => {
+  // Refetch NGOs when search term changes
+  useEffect(() => {
+    if (activeTab === 'browse-ngos') {
+      fetchNGOs();
+    }
+  }, [searchTerm]);
+
+  const fetchAllData = async () => {
     try {
       setLoading(true);
+      setError('');
+      const [statsRes, ngosRes, campaignsRes, opportunitiesRes, donationsRes, applicationsRes] = await Promise.allSettled([
+        donorService.getStatistics(),
+        donorService.getAllNGOs(searchTerm),
+        donorService.getAllApprovedCampaigns(campaignFilter),
+        donorService.getAllVolunteerOpportunities(),
+        donorService.getMyDonations(),
+        donorService.getMyVolunteerApplications(),
+      ]);
 
-      if (activeTab === 'browse-ngos') {
-        await fetchNGOs();
-      } else if (activeTab === 'campaigns') {
-        await fetchCampaigns();
-      } else if (activeTab === 'volunteer-opportunities') {
-        await fetchVolunteerOpportunities();
-      } else if (activeTab === 'my-donations') {
-        await fetchMyDonations();
-      } else if (activeTab === 'my-applications') {
-        await fetchMyApplications();
+      // Log responses for debugging
+      console.log('Stats response:', statsRes);
+      console.log('NGOs response:', ngosRes);
+      console.log('Campaigns response:', campaignsRes);
+      console.log('Opportunities response:', opportunitiesRes);
+      console.log('Donations response:', donationsRes);
+      console.log('Applications response:', applicationsRes);
+
+      if (statsRes.status === 'fulfilled' && statsRes.value.data?.success) {
+        setStats(statsRes.value.data.data || {});
+      } else {
+        console.error('Stats fetch failed:', statsRes.reason);
+        setError((prev) => prev + ' Failed to load statistics. ');
+      }
+
+      if (ngosRes.status === 'fulfilled' && ngosRes.value.data?.success) {
+        setNgos(ngosRes.value.data.data || []);
+      } else {
+        console.error('NGOs fetch failed:', ngosRes.reason);
+        setError((prev) => prev + ' Failed to load NGOs. ');
+      }
+
+      if (campaignsRes.status === 'fulfilled' && campaignsRes.value.data?.success) {
+        setCampaigns(campaignsRes.value.data.data || []);
+      } else {
+        console.error('Campaigns fetch failed:', campaignsRes.reason);
+        setError((prev) => prev + ' Failed to load campaigns. ');
+      }
+
+      if (opportunitiesRes.status === 'fulfilled' && opportunitiesRes.value.data?.success) {
+        setVolunteerOpportunities(opportunitiesRes.value.data.data || []);
+      } else {
+        console.error('Opportunities fetch failed:', opportunitiesRes.reason);
+        setError((prev) => prev + ' Failed to load volunteer opportunities. ');
+      }
+
+      if (donationsRes.status === 'fulfilled' && donationsRes.value.data?.success) {
+        setMyDonations(donationsRes.value.data.data || []);
+      } else {
+        console.error('Donations fetch failed:', donationsRes.reason);
+        setError((prev) => prev + ' Failed to load donations. ');
+      }
+
+      if (applicationsRes.status === 'fulfilled' && applicationsRes.value.data?.success) {
+        setMyApplications(applicationsRes.value.data.data || []);
+      } else {
+        console.error('Applications fetch failed:', applicationsRes.reason);
+        setError((prev) => prev + ' Failed to load applications. ');
       }
     } catch (error) {
-      toast.error('Failed to load data');
       console.error('Error fetching data:', error);
+      setError('Failed to load data. Please try again.');
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
   };
 
-  // ---------- FIXED endpoints below ----------
-
   const fetchNGOs = async () => {
     try {
-      const params = new URLSearchParams({
-        ...(searchTerm && { search: searchTerm })
-      });
-
-      const response = await fetch(`/api/public/ngos?${params}`);
-      const result = await response.json();
-
-      if (result.success) {
-        setNgos(result.data || []);
+      const response = await donorService.getAllNGOs(searchTerm);
+      console.log('NGOs fetch:', response);
+      if (response.data.success) {
+        setNgos(response.data.data || []);
       } else {
         toast.error('Failed to fetch NGOs');
       }
@@ -93,19 +145,10 @@ const DonorDashboard = () => {
 
   const fetchCampaigns = async () => {
     try {
-      let endpoint = '/api/public/campaigns/approved';
-
-      if (campaignFilter === 'money') {
-        endpoint = '/api/public/campaigns/approved/money';
-      } else if (campaignFilter === 'volunteer') {
-        endpoint = '/api/public/campaigns/approved/volunteer';
-      }
-
-      const response = await fetch(endpoint);
-      const result = await response.json();
-
-      if (result.success) {
-        setCampaigns(result.data || []);
+      const response = await donorService.getAllApprovedCampaigns(campaignFilter);
+      console.log('Campaigns fetch:', response);
+      if (response.data.success) {
+        setCampaigns(response.data.data || []);
       } else {
         toast.error('Failed to fetch campaigns');
       }
@@ -117,34 +160,25 @@ const DonorDashboard = () => {
 
   const fetchVolunteerOpportunities = async () => {
     try {
-      const response = await fetch('/api/public/volunteer-opportunities/active');
-      const result = await response.json();
-
-      if (result.success) {
-        setVolunteerOpportunities(result.data || []);
+      const response = await donorService.getAllVolunteerOpportunities();
+      console.log('Opportunities fetch:', response);
+      if (response.data.success) {
+        setVolunteerOpportunities(response.data.data || []);
       } else {
         toast.error('Failed to fetch volunteer opportunities');
       }
     } catch (error) {
-      console.error('Error fetching volunteer opportunities', error);
+      console.error('Error fetching volunteer opportunities:', error);
       toast.error('Failed to fetch volunteer opportunities');
     }
   };
 
-  // -------- donor-auth endpoints unchanged --------
   const fetchMyDonations = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/donor/donations', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const result = await response.json();
-
-      if (result.success) {
-        setMyDonations(result.data || []);
+      const response = await donorService.getMyDonations();
+      console.log('Donations fetch:', response);
+      if (response.data.success) {
+        setMyDonations(response.data.data || []);
       } else {
         toast.error('Failed to fetch donation history');
       }
@@ -156,17 +190,10 @@ const DonorDashboard = () => {
 
   const fetchMyApplications = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/donor/volunteer-applications', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const result = await response.json();
-
-      if (result.success) {
-        setMyApplications(result.data || []);
+      const response = await donorService.getMyVolunteerApplications();
+      console.log('Applications fetch:', response);
+      if (response.data.success) {
+        setMyApplications(response.data.data || []);
       } else {
         toast.error('Failed to fetch volunteer applications');
       }
@@ -176,33 +203,17 @@ const DonorDashboard = () => {
     }
   };
 
-  // Other handlers
-  const handleSearch = () => {
-    if (activeTab === 'browse-ngos') {
-      fetchNGOs();
-    }
-  };
-
   const handleDonation = async (donationData) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/donor/donations', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(donationData)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
+      const response = await donorService.donate(donationData);
+      console.log('Donation response:', response);
+      if (response.data.success) {
         toast.success('🎉 Donation successful! Thank you for your contribution.');
         setShowDonationModal(false);
         setSelectedItem(null);
+        fetchMyDonations();
       } else {
-        toast.error(result.message || 'Donation failed');
+        toast.error(response.data.message || 'Donation failed');
       }
     } catch (error) {
       console.error('Error making donation:', error);
@@ -212,24 +223,15 @@ const DonorDashboard = () => {
 
   const handleVolunteerApplication = async (applicationData) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/donor/volunteer-applications', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(applicationData)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
+      const response = await donorService.applyForVolunteer(applicationData);
+      console.log('Application response:', response);
+      if (response.data.success) {
         toast.success('🤝 Volunteer application submitted successfully!');
         setShowVolunteerModal(false);
         setSelectedItem(null);
+        fetchMyApplications();
       } else {
-        toast.error(result.message || 'Application failed');
+        toast.error(response.data.message || 'Application failed');
       }
     } catch (error) {
       console.error('Error submitting application:', error);
@@ -247,7 +249,15 @@ const DonorDashboard = () => {
     setShowVolunteerModal(true);
   };
 
-  // ---------------------------- Render ----------------------------
+  // Log state for debugging
+  useEffect(() => {
+    console.log('NGOs state:', ngos);
+    console.log('Campaigns state:', campaigns);
+    console.log('Opportunities state:', volunteerOpportunities);
+    console.log('Donations state:', myDonations);
+    console.log('Applications state:', myApplications);
+  }, [ngos, campaigns, volunteerOpportunities, myDonations, myApplications]);
+
   if (loading) {
     return (
       <div className="professional-loading">
@@ -262,6 +272,7 @@ const DonorDashboard = () => {
 
   return (
     <div className="professional-dashboard">
+      {error && <div className="error-message">{error}</div>}
       {/* Modern Header */}
       <header className="dashboard-header-professional">
         <div className="header-content">
@@ -317,7 +328,7 @@ const DonorDashboard = () => {
             { id: 'campaigns', label: '🎯 Active Campaigns', color: 'purple' },
             { id: 'volunteer-opportunities', label: '⏰ Volunteer', color: 'green' },
             { id: 'my-donations', label: '💰 My Donations', color: 'yellow' },
-            { id: 'my-applications', label: '📋 My Applications', color: 'red' }
+            { id: 'my-applications', label: '📋 My Applications', color: 'red' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -348,10 +359,9 @@ const DonorDashboard = () => {
                       placeholder="Search NGOs by name or location..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                       className="search-input-professional"
                     />
-                    <button onClick={handleSearch} className="search-button-professional">
+                    <button onClick={fetchNGOs} className="search-button-professional">
                       🔍 Search
                     </button>
                   </div>
@@ -373,11 +383,9 @@ const DonorDashboard = () => {
                     <div key={ngo.ngoId} className="professional-card ngo-card">
                       <div className="card-header-professional">
                         <div className="organization-info">
-                          <h3 className="organization-name">{ngo.organizationName}</h3>
+                          <h3 className="organization-name">{ngo.organizationName || 'Unnamed NGO'}</h3>
                           {ngo.isVerified && (
-                            <span className="verified-badge-professional">
-                              ✅ Verified
-                            </span>
+                            <span className="verified-badge-professional">✅ Verified</span>
                           )}
                         </div>
                       </div>
@@ -386,15 +394,15 @@ const DonorDashboard = () => {
                         <div className="info-grid">
                           <div className="info-item">
                             <span className="info-label">Contact Person</span>
-                            <span className="info-value">{ngo.contactPerson}</span>
+                            <span className="info-value">{ngo.contactPerson || 'Not specified'}</span>
                           </div>
                           <div className="info-item">
                             <span className="info-label">Location</span>
-                            <span className="info-value">{ngo.address}</span>
+                            <span className="info-value">{ngo.address || 'Not specified'}</span>
                           </div>
                           <div className="info-item full-width">
                             <span className="info-label">Email</span>
-                            <span className="info-value">{ngo.email}</span>
+                            <span className="info-value">{ngo.email || 'Not specified'}</span>
                           </div>
                         </div>
 
@@ -403,8 +411,7 @@ const DonorDashboard = () => {
                             <p className="description-text">
                               {ngo.description.length > 120
                                 ? `${ngo.description.substring(0, 120)}...`
-                                : ngo.description
-                              }
+                                : ngo.description}
                             </p>
                           </div>
                         )}
@@ -493,13 +500,13 @@ const DonorDashboard = () => {
                         <div className="campaign-info">
                           <div className="campaign-detail">
                             <span className="detail-label">Organization</span>
-                            <span className="detail-value">{campaign.ngoEmail}</span>
+                            <span className="detail-value">{campaign.ngoEmail || 'Not specified'}</span>
                           </div>
 
                           {campaign.amount > 0 && (
                             <div className="campaign-detail">
-                            <span className="detail-label">Amount Raised</span>
-                            <span className="detail-value amount">${campaign.amount}</span>
+                              <span className="detail-label">Amount Raised</span>
+                              <span className="detail-value amount">${campaign.amount}</span>
                             </div>
                           )}
 
@@ -567,6 +574,7 @@ const DonorDashboard = () => {
 
                       <div className="card-body-professional">
                         <p className="opportunity-description">{opportunity.description}</p>
+
                         <div className="opportunity-details">
                           {opportunity.location && (
                             <div className="detail-item">
@@ -574,12 +582,14 @@ const DonorDashboard = () => {
                               <span>{opportunity.location}</span>
                             </div>
                           )}
+
                           <div className="detail-item">
                             <span className="detail-icon">👥</span>
                             <span>
-                              {opportunity.currentVolunteers}/{opportunity.maxVolunteers} volunteers
+                              {opportunity.currentVolunteers || 0}/{opportunity.maxVolunteers || '∞'} volunteers
                             </span>
                           </div>
+
                           {opportunity.startDate && (
                             <div className="detail-item">
                               <span className="detail-icon">📅</span>
@@ -587,6 +597,7 @@ const DonorDashboard = () => {
                             </div>
                           )}
                         </div>
+
                         {opportunity.skillsRequired && opportunity.skillsRequired.length > 0 && (
                           <div className="skills-section">
                             <span className="skills-label">Required Skills:</span>
@@ -598,6 +609,7 @@ const DonorDashboard = () => {
                           </div>
                         )}
                       </div>
+
                       <div className="card-actions-professional">
                         <button
                           className={`volunteer-button-professional ${
@@ -742,7 +754,7 @@ const DonorDashboard = () => {
   );
 };
 
-// Donation Modal
+// Professional Donation Modal
 const DonationModal = ({ item, onClose, onSubmit }) => {
   const [amount, setAmount] = useState('');
   const [message, setMessage] = useState('');
@@ -761,7 +773,7 @@ const DonationModal = ({ item, onClose, onSubmit }) => {
     const donationData = {
       amount: parseFloat(amount),
       message: message.trim(),
-      ...(item.type === 'ngo' ? { ngoId: item.ngoId } : { campaignId: item.campaignId })
+      ...(item.type === 'ngo' ? { ngoId: item.ngoId } : { campaignId: item.campaignId }),
     };
 
     await onSubmit(donationData);
@@ -773,13 +785,17 @@ const DonationModal = ({ item, onClose, onSubmit }) => {
       <div className="modal-professional donation-modal-professional" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header-professional">
           <h2>💰 Make a Donation</h2>
-          <button className="close-button-professional" onClick={onClose}>×</button>
+          <button className="close-button-professional" onClick={onClose}>
+            ×
+          </button>
         </div>
+
         <div className="modal-content-professional">
           <div className="donation-target-professional">
             <h3>You're donating to:</h3>
             <p className="target-name">{item.type === 'ngo' ? item.organizationName : item.description}</p>
           </div>
+
           <form onSubmit={handleSubmit} className="donation-form-professional">
             <div className="form-group-professional">
               <label>Donation Amount ($)</label>
@@ -797,6 +813,7 @@ const DonationModal = ({ item, onClose, onSubmit }) => {
                 />
               </div>
             </div>
+
             <div className="form-group-professional">
               <label>Personal Message (Optional)</label>
               <textarea
@@ -807,6 +824,7 @@ const DonationModal = ({ item, onClose, onSubmit }) => {
                 className="message-textarea-professional"
               />
             </div>
+
             <div className="modal-actions-professional">
               <button type="button" onClick={onClose} className="cancel-button-professional">
                 Cancel
@@ -829,7 +847,7 @@ const DonationModal = ({ item, onClose, onSubmit }) => {
   );
 };
 
-// Volunteer Modal
+// Professional Volunteer Modal
 const VolunteerModal = ({ opportunity, onClose, onSubmit }) => {
   const [hours, setHours] = useState('');
   const [message, setMessage] = useState('');
@@ -853,7 +871,7 @@ const VolunteerModal = ({ opportunity, onClose, onSubmit }) => {
     const applicationData = {
       opportunityId: opportunity.opportunityId,
       hoursCommitted: parseInt(hours),
-      message: message.trim()
+      message: message.trim(),
     };
 
     await onSubmit(applicationData);
@@ -865,13 +883,17 @@ const VolunteerModal = ({ opportunity, onClose, onSubmit }) => {
       <div className="modal-professional volunteer-modal-professional" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header-professional">
           <h2>🤝 Apply for Volunteer Position</h2>
-          <button className="close-button-professional" onClick={onClose}>×</button>
+          <button className="close-button-professional" onClick={onClose}>
+            ×
+          </button>
         </div>
+
         <div className="modal-content-professional">
           <div className="volunteer-target-professional">
             <h3>{opportunity.title}</h3>
             <p className="opportunity-description-modal">{opportunity.description}</p>
           </div>
+
           <form onSubmit={handleSubmit} className="volunteer-form-professional">
             <div className="form-group-professional">
               <label>Hours You Can Commit</label>
@@ -885,6 +907,7 @@ const VolunteerModal = ({ opportunity, onClose, onSubmit }) => {
                 className="hours-input-professional"
               />
             </div>
+
             <div className="form-group-professional">
               <label>Why do you want to volunteer for this opportunity?</label>
               <textarea
@@ -896,6 +919,7 @@ const VolunteerModal = ({ opportunity, onClose, onSubmit }) => {
                 className="motivation-textarea-professional"
               />
             </div>
+
             <div className="modal-actions-professional">
               <button type="button" onClick={onClose} className="cancel-button-professional">
                 Cancel
